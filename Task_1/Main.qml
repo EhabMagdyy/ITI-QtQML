@@ -274,7 +274,6 @@ ApplicationWindow{
                 contentHeight: grid.height
                 clip: true
 
-                // Center the content when it's smaller than the viewport
                 leftMargin: Math.max(0, (width - grid.width) / 2)
                 topMargin: Math.max(0, (height - grid.height) / 2)
                 
