@@ -7,12 +7,29 @@ Popup {
     focus: true
     anchors.centerIn: parent
     width: 500
-    height: 350
+    height: 400
+
+    opacity: 0
+    scale: 0.75
+
+    enter: Transition {
+        ParallelAnimation {
+            NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 300; easing.type: Easing.OutCubic }
+            NumberAnimation { property: "scale"; from: 0.75; to: 1.0; duration: 300; easing.type: Easing.OutBack }
+        }
+    }
+
+    exit: Transition {
+        ParallelAnimation {
+            NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 220; easing.type: Easing.InCubic }
+            NumberAnimation { property: "scale"; from: 1.0; to: 0.75; duration: 220; easing.type: Easing.InBack }
+        }
+    }
 
     background: Rectangle {
-        color: "#111"
+        color: "#f5dddddd"
         radius: 16
-        border.color: "#d60f0f"
+        border.color: "#8f4e4d00"
         border.width: 2
     }
 
@@ -23,11 +40,20 @@ Popup {
         height: parent.height * 0.9
 
         Text {
+            id: titleTextItem
             text: "about this app"
             anchors.horizontalCenter: parent.horizontalCenter
             font.pixelSize: 26
             font.bold: true
-            color: "#d60f0f"
+            color: "#440000"
+        }
+
+        Rectangle {
+            width: titleTextItem.width + 10
+            height: 2
+            opacity: 0.3
+            color: '#440000'
+            anchors.horizontalCenter: titleTextItem.horizontalCenter
         }
 
         Text {
@@ -36,8 +62,20 @@ Popup {
             font.pixelSize: 16
             font.family: "Arial"
             wrapMode: Text.WordWrap
-            color: "white"
+            color: "#85333200"
             horizontalAlignment: Text.AlignHCenter
+        }
+
+        Text {
+            text: "Author: Ehab Magdy"
+            width: parent.width * 0.9
+            font.pixelSize: 16
+            font.family: "Arial"
+            font.bold: true
+            wrapMode: Text.WordWrap
+            color: "#440000"
+            anchors.leftMargin: 20
+            horizontalAlignment: Text.AlignLeft
         }
 
         Rectangle {
@@ -52,11 +90,19 @@ Popup {
             width: 70
             anchors.horizontalCenter: parent.horizontalCenter
             background: Rectangle {
-                color: '#e8fffb00'
+                color: '#85333200'
                 radius: 6
                 opacity: 0.8
             }
             onClicked: aboutPopup.close()
+
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                onEntered: parent.background.color = '#a22b0000'
+                onExited: parent.background.color = '#85333200'
+                onClicked: aboutPopup.close()
+            }
         }
     }
 }

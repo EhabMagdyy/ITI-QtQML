@@ -3,8 +3,8 @@ import QtQuick.Controls
 
 Item {
     id: tempWidget
-    width: 180
-    height: 180
+    width: 150
+    height: 150
     anchors.verticalCenter: parent.verticalCenter
 
     property real temperature: 28   // change this from backend
@@ -43,13 +43,16 @@ Item {
         Text {
             text: Math.round(tempWidget.temperature) + "°C"
             font.pixelSize: 28
+            anchors.horizontalCenter: parent.horizontalCenter
             font.bold: true
             color: "white"
         }
 
         Text {
             text: "Temperature"
-            font.pixelSize: 12
+            font.pixelSize: 14
+            anchors.horizontalCenter: parent.horizontalCenter
+            font.bold: true
             color: "#c9c9c9"
         }
     }

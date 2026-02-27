@@ -23,7 +23,8 @@ qt_add_qml_module(appTask_1
         MainScreenWidgets/HumidityWidget.qml
         MainScreenWidgets/GalleryWidget.qml
         MainScreenWidgets/AboutWidget.qml
-        Pages/PopupPage.qml
+        Pages/AboutPopupPage.qml
+        Pages/ImagePopupPage.qml
     RESOURCES 
         resources.qrc
 )

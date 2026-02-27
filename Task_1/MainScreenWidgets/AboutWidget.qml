@@ -9,9 +9,10 @@ Rectangle {
     height: 40
     anchors.horizontalCenter: parent.horizontalCenter
     radius: 10
-    color: '#d3ffffff'
-    opacity: 0.5
+    color: '#ffffff'
+    opacity: 0.8
     border.width: 2
+
     Row{
         anchors.centerIn: parent
         spacing: 20
@@ -20,7 +21,7 @@ Rectangle {
             text: "about"
             anchors.verticalCenter: parent.verticalCenter
             font.pixelSize: 22
-            color: "white"
+            color: "black"
             font.bold: true
         }
         Image {

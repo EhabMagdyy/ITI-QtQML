@@ -3,8 +3,8 @@ import QtQuick.Controls
 
 Item {
     id: humWidget
-    width: 140
-    height: 200
+    width: 130
+    height: 160
 
     property real humidity: 62
 
@@ -50,7 +50,9 @@ Item {
 
         Text {
             text: "Humidity"
-            font.pixelSize: 12
+            font.pixelSize: 14
+            anchors.horizontalCenter: parent.horizontalCenter
+            font.bold: true
             color: "#c9c9c9"
         }
     }
