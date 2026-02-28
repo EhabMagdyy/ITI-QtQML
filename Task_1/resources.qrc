@@ -3,10 +3,6 @@
         <file>videos/splash.mp4</file>
         <file>images/galleryIcon.png</file>
         <file>images/aboutIcon.png</file>
-        <file>MainScreenWidgets/TempWidget.qml</file>
-        <file>MainScreenWidgets/HumidityWidget.qml</file>
-        <file>MainScreenWidgets/GalleryWidget.qml</file>
-        <file>MainScreenWidgets/AboutWidget.qml</file>
         <file>images/2.png</file>
         <file>images/1.png</file>
         <file>images/5.png</file>
@@ -18,5 +14,9 @@
         <file>images/9.png</file>
         <file>Pages/ImagePopupPage.qml</file>
         <file>Pages/GalleryPage.qml</file>
+        <file>Widgets/AboutWidget.qml</file>
+        <file>Widgets/GalleryWidget.qml</file>
+        <file>Widgets/HumidityWidget.qml</file>
+        <file>Widgets/TempWidget.qml</file>
     </qresource>
 </RCC>

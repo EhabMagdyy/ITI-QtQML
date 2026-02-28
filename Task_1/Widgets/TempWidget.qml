@@ -7,7 +7,7 @@ Item {
     height: 150
     anchors.verticalCenter: parent.verticalCenter
 
-    property real temperature: 28   // change this from backend
+    property real temperature: info.temperature
 
     Rectangle {
         anchors.fill: parent

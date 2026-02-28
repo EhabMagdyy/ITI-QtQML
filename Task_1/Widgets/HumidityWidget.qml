@@ -6,7 +6,7 @@ Item {
     width: 130
     height: 160
 
-    property real humidity: 62
+    property real humidity: info.humidity
     anchors.verticalCenter: parent.verticalCenter
 
     Rectangle {

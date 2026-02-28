@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtMultimedia
-import "MainScreenWidgets"
+import "Widgets"
 import "Pages"
 
 pragma ComponentBehavior: Bound

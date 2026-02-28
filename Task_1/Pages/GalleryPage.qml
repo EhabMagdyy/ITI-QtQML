@@ -109,7 +109,7 @@ Rectangle {
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.topMargin: 50
-        font.pixelSize: 30
+        font.pixelSize: 34
         font.family: "Arial"
         color: "white"
         font.bold: true
@@ -133,7 +133,7 @@ Rectangle {
         Grid {
             id: grid
             columns: 3
-            spacing: 18
+            spacing: 20
             padding: 20
 
             Repeater {
@@ -142,17 +142,17 @@ Rectangle {
                     id: imgContainer
                     required property int index
                     property int myIdx: index
-                    width: 300
-                    height: 220
+                    width: 370
+                    height: 250
                     radius: 25
                     color: "#1c1c1e"
                     border.color: '#c2c2c2'
-                    border.width: 3
+                    border.width: 5
                     clip: true
 
                     Image {
                         anchors.fill: parent
-                        anchors.margins: 3
+                        anchors.margins: 5
                         source: "qrc:/images/" + (imgContainer.myIdx + 1) + ".png"
                         fillMode: Image.PreserveAspectCrop
                         smooth: true

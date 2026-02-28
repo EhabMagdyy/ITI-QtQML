@@ -12,6 +12,7 @@ qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(appTask_1
     main.cpp
+    Backend/info.cpp
 )
 
 qt_add_qml_module(appTask_1
@@ -19,10 +20,10 @@ qt_add_qml_module(appTask_1
     VERSION 1.0
     QML_FILES
         Main.qml
-        MainScreenWidgets/TempWidget.qml
-        MainScreenWidgets/HumidityWidget.qml
-        MainScreenWidgets/GalleryWidget.qml
-        MainScreenWidgets/AboutWidget.qml
+        Widgets/TempWidget.qml
+        Widgets/HumidityWidget.qml
+        Widgets/GalleryWidget.qml
+        Widgets/AboutWidget.qml
         Pages/AboutPopupPage.qml
         Pages/ImagePopupPage.qml
         Pages/GalleryPage.qml
