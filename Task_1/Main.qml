@@ -83,6 +83,7 @@ ApplicationWindow{
                     }
                     Row{
                         spacing: 40
+                        anchors.horizontalCenter: parent.horizontalCenter
 
                         // Date
                         Text{
@@ -124,12 +125,16 @@ ApplicationWindow{
                         anchors.horizontalCenter: parent.horizontalCenter
                         spacing: 40
 
+                        HumidityWidget {
+                            id: humWidget
+                        }
+
                         TempWidget {
                             id: tempWidget
                         }
 
-                        HumidityWidget {
-                            id: humWidget
+                        WindWidget{
+                            id: windWidget
                         }
                     }
 

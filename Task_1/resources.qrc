@@ -18,5 +18,6 @@
         <file>Widgets/GalleryWidget.qml</file>
         <file>Widgets/HumidityWidget.qml</file>
         <file>Widgets/TempWidget.qml</file>
+        <file>Widgets/WindWidget.qml</file>
     </qresource>
 </RCC>

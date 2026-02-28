@@ -22,6 +22,7 @@ qt_add_qml_module(appTask_1
         Main.qml
         Widgets/TempWidget.qml
         Widgets/HumidityWidget.qml
+        Widgets/WindWidget.qml
         Widgets/GalleryWidget.qml
         Widgets/AboutWidget.qml
         Pages/AboutPopupPage.qml
