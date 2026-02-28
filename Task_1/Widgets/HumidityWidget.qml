@@ -47,7 +47,7 @@ Item {
             text: Math.round(humWidget.humidity) + "%"
             font.pixelSize: 22
             font.bold: true
-            color: "black"
+            color: "#440000"
             anchors.horizontalCenter: parent.horizontalCenter
         }
 

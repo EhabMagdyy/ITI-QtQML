@@ -5,7 +5,7 @@ Rectangle {
     id: aboutWidget
     property Popup aboutPopup
 
-    width: parent.width / 2
+    width: parent.width / 3
     height: 40
     anchors.horizontalCenter: parent.horizontalCenter
     radius: 10

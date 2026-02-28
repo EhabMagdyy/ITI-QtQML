@@ -8,6 +8,7 @@ Item {
     anchors.verticalCenter: parent.verticalCenter
 
     property real temperature: info.temperature
+    property string condition: info.condition
 
     Rectangle {
         anchors.fill: parent
@@ -45,11 +46,11 @@ Item {
             font.pixelSize: 28
             anchors.horizontalCenter: parent.horizontalCenter
             font.bold: true
-            color: "#000000"
+            color: "#440000"
         }
 
         Text {
-            text: "Temperature"
+            text: tempWidget.condition
             font.pixelSize: 15
             anchors.horizontalCenter: parent.horizontalCenter
             font.bold: true

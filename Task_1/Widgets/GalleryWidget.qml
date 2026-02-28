@@ -6,7 +6,7 @@ Rectangle {
     property StackView stackView
     property Component galleryPage
 
-    width: parent.width / 1.5
+    width: parent.width / 1.6
     height: 60
     anchors.horizontalCenter: parent.horizontalCenter
     color: '#e8fffb00'
