@@ -6,7 +6,11 @@ pragma ComponentBehavior: Bound
 Rectangle {
     id: galleryPagerect
     anchors.fill: parent
-    color: "#bd130202"
+    gradient: Gradient {
+        GradientStop { position: 0.0; color: '#bd3d0303' }
+        GradientStop { position: 0.5; color: '#bd240303' }
+        GradientStop { position: 1.0; color: '#bd080101' }
+    }
 
     property Popup imagePopup
     property StackView stackView
