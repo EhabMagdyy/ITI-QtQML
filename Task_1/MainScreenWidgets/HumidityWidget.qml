@@ -7,12 +7,14 @@ Item {
     height: 160
 
     property real humidity: 62
+    anchors.verticalCenter: parent.verticalCenter
 
     Rectangle {
         anchors.fill: parent
         radius: 16
-        color: "#121212"
+        color: "#f5dddddd"
         border.color: "#2a2a2a"
+        border.width: 5
     }
 
     // Bar container
@@ -30,7 +32,7 @@ Item {
             width: parent.width
             height: parent.height * (humWidget.humidity / 100)
             radius: 12
-            color: "#3fa9f5"
+            color: '#0073c5'
             anchors.bottom: parent.bottom
         }
     }
@@ -45,15 +47,16 @@ Item {
             text: Math.round(humWidget.humidity) + "%"
             font.pixelSize: 22
             font.bold: true
-            color: "white"
+            color: "black"
+            anchors.horizontalCenter: parent.horizontalCenter
         }
 
         Text {
             text: "Humidity"
-            font.pixelSize: 14
+            font.pixelSize: 15
             anchors.horizontalCenter: parent.horizontalCenter
             font.bold: true
-            color: "#c9c9c9"
+            color: "#000000"
         }
     }
 }

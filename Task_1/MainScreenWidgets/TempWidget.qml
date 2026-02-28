@@ -12,7 +12,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: width / 2
-        color: "#121212"
+        color: "#f5dddddd"
         border.color: "#2a2a2a"
     }
 
@@ -21,7 +21,7 @@ Item {
         anchors.fill: parent
         radius: width / 2
         color: "transparent"
-        border.width: 6
+        border.width: 5
         border.color: "#2a2a2a"
     }
 
@@ -32,8 +32,8 @@ Item {
         radius: width / 2
         color: "transparent"
         border.width: 6
-        border.color: "#d60f0f"
-        opacity: tempWidget.temperature / 50.0   // max temp = 50°C (adjust)
+        border.color: '#eaff8383'
+        opacity: tempWidget.temperature / 50.0
     }
 
     Column {
@@ -45,15 +45,15 @@ Item {
             font.pixelSize: 28
             anchors.horizontalCenter: parent.horizontalCenter
             font.bold: true
-            color: "white"
+            color: "#000000"
         }
 
         Text {
             text: "Temperature"
-            font.pixelSize: 14
+            font.pixelSize: 15
             anchors.horizontalCenter: parent.horizontalCenter
             font.bold: true
-            color: "#c9c9c9"
+            color: "#000000"
         }
     }
 }

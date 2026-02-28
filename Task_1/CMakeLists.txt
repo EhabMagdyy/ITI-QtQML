@@ -25,6 +25,7 @@ qt_add_qml_module(appTask_1
         MainScreenWidgets/AboutWidget.qml
         Pages/AboutPopupPage.qml
         Pages/ImagePopupPage.qml
+        Pages/GalleryPage.qml
     RESOURCES 
         resources.qrc
 )

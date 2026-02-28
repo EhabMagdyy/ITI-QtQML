@@ -34,6 +34,9 @@ Rectangle {
 
     MouseArea {
         anchors.fill: parent
+        hoverEnabled: true
+        onEntered: galleryWidget.color = '#fdff8b'
+        onExited: galleryWidget.color = '#e8fffb00'
         onClicked: {
             galleryWidget.stackView.push(galleryWidget.galleryPage)
         }

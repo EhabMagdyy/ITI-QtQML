@@ -21,7 +21,7 @@ Rectangle {
             text: "about"
             anchors.verticalCenter: parent.verticalCenter
             font.pixelSize: 22
-            color: "black"
+            color: "#000000"
             font.bold: true
         }
         Image {
@@ -32,6 +32,9 @@ Rectangle {
     }
     MouseArea {
         anchors.fill: parent
+        hoverEnabled: true
+        onEntered: aboutWidget.color = '#b4fff2f2'
+        onExited: aboutWidget.color = '#ffffff'
         onClicked: aboutWidget.aboutPopup.open()
     }
 }
