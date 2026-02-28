@@ -1,5 +1,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include "Backend/info.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -12,6 +14,9 @@ int main(int argc, char *argv[])
         &app,
         []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
+    Info info;
+    // Expose the info to QML
+    engine.rootContext()->setContextProperty("info", &info);
     engine.loadFromModule("Task_1", "Main");
 
     return app.exec();
