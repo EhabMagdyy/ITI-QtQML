@@ -31,9 +31,9 @@ ApplicationWindow{
     readonly property color numBtnGradStart: "#1E2154" 
     readonly property color numBtnGradEnd:   "#2A2B6E" 
 
-    // Operator Button Gradient (+  −  ×  ÷)
-    readonly property color opBtnGradStart: "#2D1B69" 
-    readonly property color opBtnGradEnd:   "#4A2990" 
+    // Operator Button Gradient (+  −  ×  ÷ %)
+    readonly property color opBtnGradStart: '#261363' 
+    readonly property color opBtnGradEnd:   '#311179' 
 
     // Equal Button Gradient (=)
     readonly property color eqBtnGradStart: '#b776f0' 
