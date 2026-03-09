@@ -2,5 +2,8 @@
     <qresource prefix="/">
         <file>images/bt.png</file>
         <file>images/wifi.png</file>
+        <file>Widgets/NetworkCard.qml</file>
+        <file>Pages/BluetoothPage.qml</file>
+        <file>Pages/WiFiPage.qml</file>
     </qresource>
 </RCC>
