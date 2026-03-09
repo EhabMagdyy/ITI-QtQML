@@ -3,7 +3,10 @@ import QtQuick.Controls
 
 Rectangle {
     id: wifiPage
-    anchors.fill: parent
+    // Remove anchors.fill: parent ← this conflicts with StackView
+    // StackView sets width/height itself, so just do:
+    width: parent ? parent.width : 0
+    height: parent ? parent.height : 0
     color: "transparent"
     required property StackView stackView
 
@@ -75,7 +78,10 @@ Rectangle {
                 Switch {
                     id: wifiSwitch
                     anchors.verticalCenter: parent.verticalCenter
-                    checked: false
+                    checked: WifiManager.wifiEnabled
+                    onCheckedChanged: {
+                        WifiManager.wifiEnabled = checked
+                    }
                 }
             }
         }

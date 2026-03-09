@@ -6,12 +6,13 @@ set(CMAKE_AUTORCC ON)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Quick)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Quick DBus)
 
 qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(appTask03_NetworkManager
     main.cpp
+    Backend/NetworkManager.cpp
 )
 
 qt_add_qml_module(appTask03_NetworkManager
@@ -33,7 +34,7 @@ set_target_properties(appTask03_NetworkManager PROPERTIES
 )
 
 target_link_libraries(appTask03_NetworkManager
-    PRIVATE Qt6::Quick
+    PRIVATE Qt6::Quick Qt6::DBus
 )
 
 include(GNUInstallDirs)
