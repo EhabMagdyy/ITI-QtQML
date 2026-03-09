@@ -19,6 +19,9 @@ qt_add_qml_module(appTask03_NetworkManager
     VERSION 1.0
     QML_FILES
         Main.qml
+        Widgets/NetworkCard.qml
+        Pages/WiFiPage.qml
+        Pages/BluetoothPage.qml
     RESOURCES 
         resources.qrc
 )
