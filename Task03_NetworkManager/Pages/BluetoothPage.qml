@@ -1,39 +1,74 @@
 import QtQuick
 import QtQuick.Controls
 
-Rectangle {
+Rectangle{
     id: btPage
     width: parent ? parent.width : 0
     height: parent ? parent.height : 0
     color: "transparent"
     required property StackView stackView
 
-    Connections {
+    // Track which device is connecting / connected
+    property string connectingAddress: ""
+    property var    connectedAddresses: []
+
+    Connections{
         target: BluetoothManager
 
-        function onBluetoothEnabledChanged(enabled) {
+        function onBluetoothEnabledChanged(enabled){
             btSwitch.checked = enabled
         }
-        function onScanStarted() {
-            console.log("Scanning for devices...")
+        function onScanStarted(){
+            showToast("Scanning for devices...", false)
         }
-        function onScanFinished(devices) {
+        function onScanFinished(devices){
             deviceListModel.clear()
+            var newConnected = btPage.connectedAddresses.slice() 
             for (var i = 0; i < devices.length; i++) {
-                var parts = devices[i].split("|")
+                var parts  = devices[i].split("|")
+                var isConn = parts[2] === "1"
                 deviceListModel.append({ "name": parts[0], "address": parts[1] })
+                if (isConn && newConnected.indexOf(parts[1]) === -1)
+                    newConnected.push(parts[1])
             }
-            scanResultsPopup.open()
+            btPage.connectedAddresses = newConnected
         }
-        function onScanFailed(reason)      { showToast("Scan failed: " + reason, true) }
-        function onPairSuccess(name)       { showToast("✓ Paired with " + name, false) }
-        function onPairFailed(reason)      { showToast("✗ Pair failed: " + reason, true) }
-        function onConnectSuccess(name)    { showToast("✓ Connected to " + name, false) }
-        function onConnectFailed(reason)   { showToast("✗ " + reason, true) }
+        function onScanFailed(reason){ showToast(reason, true) }
+        function onPairSuccess(name) { showToast("Paired with " + name, false) }
+        function onPairFailed(reason){ showToast("Pair failed: " + reason, true) }
+
+        // onDeviceConnectionChanged
+        function onDeviceConnectionChanged(address, connected) {
+            var list = btPage.connectedAddresses.slice() 
+            var idx  = list.indexOf(address)
+            if (connected && idx === -1) {
+                list.push(address)
+            } else if (!connected && idx !== -1) {
+                list.splice(idx, 1)
+            }
+            btPage.connectedAddresses = list               // ← QML now sees a NEW array = re-evaluates
+
+            if (address === btPage.connectingAddress)
+                btPage.connectingAddress = ""
+        }
+
+        //  onConnectSuccess
+        function onConnectSuccess(name) {
+            var list = btPage.connectedAddresses.slice()           // ← new array
+            if (list.indexOf(btPage.connectingAddress) === -1)
+                list.push(btPage.connectingAddress)
+            btPage.connectedAddresses = list
+            btPage.connectingAddress  = ""
+            showToast("Connected to " + name, false)
+        }
+        function onConnectFailed(reason){
+            btPage.connectingAddress = ""
+            showToast(reason, true)
+        }
     }
 
     // Main Content Column
-    Column {
+    Column{
         id: btPageCol
         anchors.top: parent.top
         anchors.left: parent.left
@@ -44,7 +79,7 @@ Rectangle {
         spacing: btPage.height * 0.02
 
         // Page Title
-        Text {
+        Text{
             text: qsTr("Bluetooth Settings")
             font.pixelSize: btPage.width / 22
             color: '#ffedea'
@@ -54,7 +89,7 @@ Rectangle {
         }
 
         // Divider
-        Rectangle {
+        Rectangle{
             width: parent.width
             height: 1
             color: '#ff6c55'
@@ -62,34 +97,35 @@ Rectangle {
         }
 
         // Bluetooth Toggle Card
-        Rectangle {
+        Rectangle{
             width: parent.width
             height: btPage.height / 10
             radius: height / 4
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: '#2a0a08' }
-                GradientStop { position: 1.0; color: '#1a0504' }
+            gradient: Gradient{
+                GradientStop{ position: 0.0; color: '#2a0a08' }
+                GradientStop{ position: 1.0; color: '#1a0504' }
             }
             border.color: btSwitch.checked ? '#ff6c55' : '#5a2a25'
             border.width: 2
 
-            Row {
+            Row{
                 anchors.fill: parent
                 anchors.leftMargin: parent.width * 0.05
                 anchors.rightMargin: parent.width * 0.05
 
-                Column {
+                Column{
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width - btSwitch.width - parent.anchors.leftMargin - parent.anchors.rightMargin
                     spacing: 2
-                    Text {
+
+                    Text{
                         text: qsTr("Bluetooth")
                         font.pixelSize: btPage.height * 0.025
                         color: '#ffedea'
                         font.bold: true
                         font.family: "Arial"
                     }
-                    Text {
+                    Text{
                         text: btSwitch.checked ? qsTr("ON") : qsTr("OFF")
                         font.pixelSize: btPage.height * 0.022
                         color: btSwitch.checked ? '#ff8a7a' : '#7a4a45'
@@ -97,41 +133,54 @@ Rectangle {
                     }
                 }
 
-                Switch {
+                Switch{
                     id: btSwitch
                     anchors.verticalCenter: parent.verticalCenter
-                    checked: BluetoothManager.bluetoothEnabled
+                    Component.onCompleted: {
+                        btPage.updatingFromBackend = true
+                        btSwitch.checked = BluetoothManager.bluetoothEnabled
+                        btPage.updatingFromBackend = false
+                    }
                     onCheckedChanged: {
-                        BluetoothManager.bluetoothEnabled = checked
+                        if (!btPage.updatingFromBackend)
+                            BluetoothManager.bluetoothEnabled = checked
                     }
                 }
+            }
+
+            MouseArea{
+                anchors.fill: parent
+                hoverEnabled: true
+                propagateComposedEvents: true
+                z: -1
+                onClicked: (mouse) => mouse.accepted = false
             }
         }
 
         // Scan Button
-        Rectangle {
+        Rectangle{
             width: parent.width
             height: btPage.height / 12
             radius: height / 4
             opacity: btSwitch.checked ? 1.0 : 0.4
-            gradient: Gradient {
-                GradientStop { id: stop11; position: 0.0; color: '#ff8a7a' }
-                GradientStop { id: stop12; position: 1.0; color: '#e95441' }
+            gradient: Gradient{
+                GradientStop{ id: stop11; position: 0.0; color: '#ff8a7a' }
+                GradientStop{ id: stop12; position: 1.0; color: '#e95441' }
             }
             border.color: '#ffb3a9'
             border.width: 1
 
-            Row {
+            Row{
                 anchors.centerIn: parent
                 spacing: parent.width * 0.03
 
-                Text {
+                Text{
                     text: "⟳"
                     font.pixelSize: parent.parent.height * 0.45
                     color: '#fff5f3'
                     anchors.verticalCenter: parent.verticalCenter
                 }
-                Text {
+                Text{
                     text: qsTr("Scan for Devices")
                     font.pixelSize: parent.parent.height * 0.38
                     color: '#fff5f3'
@@ -141,34 +190,27 @@ Rectangle {
                 }
             }
 
-            MouseArea {
+            MouseArea{
                 id: scanArea
                 anchors.fill: parent
                 enabled: btSwitch.checked
                 hoverEnabled: true
-                onEntered: {
-                    stop11.color = '#cc4433'
-                    stop12.color = '#aa2211'
-                }
-                onExited: {
-                    stop11.color = '#ff8a7a'
-                    stop12.color = '#e95441'
-                }
-                onClicked: BluetoothManager.scanDevices()
+                onEntered:{ stop11.color = '#cc4433'; stop12.color = '#aa2211' }
+                onExited: { stop11.color = '#ff8a7a'; stop12.color = '#e95441' }
+                onClicked:  BluetoothManager.scanDevices()
             }
         }
 
         // Divider
-        Rectangle {
+        Rectangle{
             width: parent.width
             height: 1
             color: '#ff6c55'
             opacity: 0.3
         }
 
-        // Connect Card
-        // Connect Card
-        Rectangle {
+        // Device List Card
+        Rectangle{
             width: parent.width
             height: deviceListModel.count > 0
                     ? deviceListView.contentHeight + btPage.height * 0.08
@@ -176,17 +218,16 @@ Rectangle {
             radius: btPage.height * 0.02
             opacity: btSwitch.checked ? 1.0 : 0.4
             clip: true
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: '#2a0a08' }
-                GradientStop { position: 1.0; color: '#1a0504' }
+            gradient: Gradient{
+                GradientStop{ position: 0.0; color: '#2a0a08' }
+                GradientStop{ position: 1.0; color: '#1a0504' }
             }
             border.color: '#5a2a25'
             border.width: 2
 
-            Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+            Behavior on height{ NumberAnimation{ duration: 200; easing.type: Easing.OutCubic } }
 
-            // Empty state label
-            Text {
+            Text{
                 anchors.centerIn: parent
                 visible: deviceListModel.count === 0
                 text: qsTr("No devices found.\nTap Scan to search.")
@@ -196,7 +237,7 @@ Rectangle {
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            ListView {
+            ListView{
                 id: deviceListView
                 anchors.top: parent.top
                 anchors.left: parent.left
@@ -209,9 +250,9 @@ Rectangle {
                 spacing: btPage.height * 0.012
                 visible: deviceListModel.count > 0
 
-                ScrollBar.vertical: ScrollBar {
+                ScrollBar.vertical: ScrollBar{
                     policy: ScrollBar.AsNeeded
-                    contentItem: Rectangle {
+                    contentItem: Rectangle{
                         implicitWidth: 4
                         radius: 2
                         color: '#ff6c55'
@@ -219,24 +260,27 @@ Rectangle {
                     }
                 }
 
-                delegate: Rectangle {
+                delegate: Rectangle{
                     width: deviceListView.width - 6
                     height: btPage.height * 0.11
                     radius: height / 4
                     color: rowHover.containsMouse ? '#3a1008' : '#200805'
                     border.color: rowHover.containsMouse ? '#ff6c55' : '#3a1a15'
                     border.width: 1
-                    Behavior on color { ColorAnimation { duration: 100 } }
-                    Behavior on border.color { ColorAnimation { duration: 100 } }
+                    Behavior on color{ ColorAnimation{ duration: 100 } }
+                    Behavior on border.color{ ColorAnimation{ duration: 100 } }
 
-                    Row {
+                    property bool isConnecting: model.address === btPage.connectingAddress
+                    property bool isConnected:  btPage.connectedAddresses.indexOf(model.address) !== -1
+
+                    Row{
                         anchors.fill: parent
                         anchors.leftMargin: parent.width * 0.04
                         anchors.rightMargin: parent.width * 0.04
                         spacing: parent.width * 0.02
 
                         // Bluetooth icon
-                        Text {
+                        Text{
                             text: "⬡"
                             font.pixelSize: parent.parent.height * 0.38
                             color: '#ff8a7a'
@@ -244,16 +288,15 @@ Rectangle {
                         }
 
                         // Device name + address
-                        Column {
+                        Column{
                             anchors.verticalCenter: parent.verticalCenter
                             width: parent.width
-                                   - pairBtn.width
                                    - connectBtn.width
                                    - parent.parent.height * 0.38
                                    - parent.spacing * 3
                             spacing: 2
 
-                            Text {
+                            Text{
                                 text: model.name
                                 font.pixelSize: btPage.height * 0.022
                                 color: '#ffedea'
@@ -262,7 +305,7 @@ Rectangle {
                                 elide: Text.ElideRight
                                 width: parent.width
                             }
-                            Text {
+                            Text{
                                 text: model.address
                                 font.pixelSize: btPage.height * 0.016
                                 color: '#7a4a45'
@@ -272,67 +315,53 @@ Rectangle {
                             }
                         }
 
-                        // Pair button
-                        Rectangle {
-                            id: pairBtn
-                            width: btPage.width * 0.16
-                            height: parent.parent.height * 0.58
-                            radius: height / 3
-                            anchors.verticalCenter: parent.verticalCenter
-                            color: pairArea.containsMouse ? '#995500' : '#cc7700'
-                            Behavior on color { ColorAnimation { duration: 100 } }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: qsTr("Pair")
-                                font.pixelSize: parent.height * 0.36
-                                color: '#fff5f3'
-                                font.bold: true
-                                font.family: "Arial"
-                            }
-
-                            MouseArea {
-                                id: pairArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                onClicked: BluetoothManager.pairDevice(model.address)
-                            }
-                        }
-
-                        // Connect button
-                        Rectangle {
+                        // Connect button — idle / connecting / connected
+                        Rectangle{
                             id: connectBtn
                             width: btPage.width * 0.2
                             height: parent.parent.height * 0.58
                             radius: height / 3
                             anchors.verticalCenter: parent.verticalCenter
-                            color: connectBtnArea.containsMouse ? '#aa2211' : '#ff6c55'
-                            Behavior on color { ColorAnimation { duration: 100 } }
+                            color:{
+                                if (parent.parent.isConnected)  return '#227722'
+                                if (parent.parent.isConnecting) return '#885500'
+                                return connectBtnArea.containsMouse ? '#aa2211' : '#ff6c55'
+                            }
+                            Behavior on color{ ColorAnimation{ duration: 200 } }
 
-                            Text {
+                            Text{
                                 anchors.centerIn: parent
-                                text: qsTr("Connect")
-                                font.pixelSize: parent.height * 0.36
+                                text:{
+                                    if (parent.parent.parent.isConnected)  return qsTr("Connected")
+                                    if (parent.parent.parent.isConnecting) return qsTr("Connecting..")
+                                    return qsTr("Connect")
+                                }
+                                font.pixelSize: parent.height * 0.32
                                 color: '#fff5f3'
                                 font.bold: true
                                 font.family: "Arial"
                             }
 
-                            MouseArea {
+                            MouseArea{
                                 id: connectBtnArea
                                 anchors.fill: parent
                                 hoverEnabled: true
-                                onClicked: BluetoothManager.connectDevice(model.address)
+                                enabled: !parent.parent.parent.isConnecting
+                                         && !parent.parent.parent.isConnected
+                                onClicked:{
+                                    btPage.connectingAddress = model.address
+                                    BluetoothManager.connectDevice(model.address)
+                                }
                             }
                         }
                     }
 
-                    MouseArea {
+                    MouseArea{
                         id: rowHover
                         anchors.fill: parent
                         hoverEnabled: true
                         propagateComposedEvents: true
-                        z: -1 // pushes rowHover below all sibling items in the delegate, so the buttons' MouseAreas are on top and receive clicks first, while rowHover still covers the rest of the card for hover detection.
+                        z: -1
                         onClicked: (mouse) => mouse.accepted = false
                     }
                 }
@@ -340,16 +369,16 @@ Rectangle {
         }
     }
 
-    ListModel { id: deviceListModel }
+    ListModel{ id: deviceListModel }
 
-    // Status Toast — same as WiFi page
-    Rectangle {
+    // Status Toast
+    Rectangle{
         id: statusToast
         width: parent.width * 0.5
         height: parent.height * 0.08
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: parent.height * 0.15
+        anchors.bottomMargin: parent.height * 0.05
         radius: height / 2
         color: statusToast.isError ? '#3d0a00' : '#0a2e0a'
         border.color: statusToast.isError ? '#ff4422' : '#44bb44'
@@ -358,9 +387,9 @@ Rectangle {
         visible: opacity > 0
         z: 20
         property bool isError: false
-        Behavior on opacity { NumberAnimation { duration: 250 } }
+        Behavior on opacity{ NumberAnimation{ duration: 250 } }
 
-        Text {
+        Text{
             id: toastText
             anchors.centerIn: parent
             font.pixelSize: parent.height * 0.35
@@ -368,14 +397,14 @@ Rectangle {
             font.family: "Arial"
             font.bold: true
         }
-        Timer {
+        Timer{
             id: toastTimer
             interval: 3000
             onTriggered: statusToast.opacity = 0
         }
     }
 
-    function showToast(message, isError) {
+    function showToast(message, isError){
         toastText.text = message
         statusToast.isError = isError
         statusToast.opacity = 1
@@ -383,7 +412,7 @@ Rectangle {
     }
 
     // Return to Main Page Button
-    Rectangle {
+    Rectangle{
         width: parent.width / 6.5
         height: parent.height / 15
         color: '#fffaf8'
@@ -395,7 +424,7 @@ Rectangle {
         border.color: '#f3614e'
         border.width: 2
 
-        Text {
+        Text{
             text: qsTr("Back")
             font.pixelSize: height * 0.8
             color: '#8a1000'
@@ -404,11 +433,11 @@ Rectangle {
             anchors.centerIn: parent
         }
 
-        MouseArea {
+        MouseArea{
             anchors.fill: parent
             hoverEnabled: true
             onEntered: parent.color = '#ffd4ce'
-            onExited: parent.color = '#fffaf8'
+            onExited:  parent.color = '#fffaf8'
             onClicked: btPage.stackView.pop()
         }
     }
