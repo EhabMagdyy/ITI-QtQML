@@ -3,12 +3,37 @@ import QtQuick.Controls
 
 Rectangle {
     id: wifiPage
-    // Remove anchors.fill: parent ← this conflicts with StackView
-    // StackView sets width/height itself, so just do:
     width: parent ? parent.width : 0
     height: parent ? parent.height : 0
     color: "transparent"
     required property StackView stackView
+    
+    // Backend Connections
+    Connections {
+        target: WifiManager
+
+        function onWifiEnabledChanged(enabled) {
+            wifiSwitch.checked = enabled
+        }
+        function onScanStarted() {
+            console.log("Scanning for networks...")
+        }
+        function onScanFinished(networks) {
+            networkListModel.clear()
+            for (var i = 0; i < networks.length; i++)
+                networkListModel.append({ "name": networks[i] })
+            scanResultsPopup.open()
+        }
+        function onScanFailed(reason) {
+            showToast("Scan failed: " + reason, true)
+        }
+        function onConnectSuccess(ssid) {
+            showToast("Connected to " + ssid, false)
+        }
+        function onConnectFailed(reason) {
+            showToast(reason, true)
+        }
+    }
 
     // Main Content Column
     Column {
@@ -79,9 +104,7 @@ Rectangle {
                     id: wifiSwitch
                     anchors.verticalCenter: parent.verticalCenter
                     checked: WifiManager.wifiEnabled
-                    onCheckedChanged: {
-                        WifiManager.wifiEnabled = checked
-                    }
+                    onCheckedChanged: WifiManager.wifiEnabled = checked 
                 }
             }
         }
@@ -133,8 +156,7 @@ Rectangle {
                     stop12.color = '#e95441'
                 }
                 onClicked: {
-                    // TODO: trigger backend network scan
-                    // result in list of networks to display in popup page
+                    WifiManager.scanNetworks()
                 }
             }
         }
@@ -169,7 +191,7 @@ Rectangle {
                 spacing: wifiPage.height * 0.018
 
                 Text {
-                    text: qsTr("Connect to Network")
+                    text: qsTr("Connect to Hidden Networks")
                     font.pixelSize: wifiPage.height * 0.03
                     color: '#ffedea'
                     font.bold: true
@@ -240,6 +262,20 @@ Rectangle {
                             font.family: "Arial"
                             visible: !passField.text && !passField.activeFocus
                         }
+
+                        Keys.onPressed: (event) => {
+                            if(event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                console.log('Enter pressed > Connecting')
+                                if(ssidField.text !== "" && passField.text !== "" && passField.text.length >= 8) {
+                                    console.log("Connecting to network:", ssidField.text)
+                                    WifiManager.connectToNetwork(ssidField.text, passField.text)
+                                } 
+                                else {
+                                    console.log("Please enter a valid SSID and password!")
+                                }
+                                event.accepted = true   // prevent default behavior (like adding a newline)
+                            }
+                        }
                     }
                 }
 
@@ -248,6 +284,7 @@ Rectangle {
                     width: parent.width
                     height: wifiPage.height / 12
                     radius: height / 4
+                    
                     gradient: Gradient {
                         GradientStop { id: stop1; position: 0.0; color: connectArea.pressed ? '#cc4433' : '#ff6c55' }
                         GradientStop { id: stop2; position: 1.0; color: connectArea.pressed ? '#aa2211' : '#c94030' }
@@ -277,20 +314,268 @@ Rectangle {
                             stop1.color = '#ff6c55'
                             stop2.color = '#c94030'
                         }
-                        onClicked: {
-                            if(ssidField.text !== "" && passField.text !== "" && passField.length >= 8) {
-                                // Pass ssidField.text + passField.text to backend
-                                console.log("Connecting to network:", ssidField.text)
-                                console.log("Password:", passField.text)
-                            } 
-                            else {
-                                console.log("Please enter a valid SSID and password!")
-                            }
+                        onClicked: parent.onConnectHandler()
+                    }
+                    function onConnectHandler(){
+                        if(ssidField.text !== "" && passField.text !== "" && passField.text.length >= 8) {
+                            // Pass ssidField.text + passField.text to backend
+                            console.log("Connecting to network:", ssidField.text)
+                            console.log("Password:", passField.text)
+                            WifiManager.connectToNetwork(ssidField.text, passField.text)
+                        } 
+                        else {
+                            console.log("Please enter a valid SSID and password!")
                         }
                     }
                 }
             }
         }
+    }
+
+    ListModel { id: networkListModel }
+
+    Popup {
+        id: scanResultsPopup
+        width: parent.width * 0.8
+        height: parent.height * 0.7
+        anchors.centerIn: parent
+        modal: true // prevents interaction with the background
+        focus: true // ensures it receives key events
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside    // closed when ESC Clicked & ckicking outside
+
+        background: Rectangle {
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: '#1e0604' }
+                GradientStop { position: 1.0; color: '#120302' }
+            }
+            radius: 10
+            border.color: '#ff5f46'
+            border.width: 2
+        }
+
+        Column {
+            anchors.fill: parent
+            anchors.margins: scanResultsPopup.width * 0.05
+            spacing: scanResultsPopup.height * 0.015
+
+            // Title Row
+            Row {
+                width: parent.width
+                height: scanResultsPopup.height * 0.1
+
+                Text {
+                    text: qsTr("Available Networks")
+                    font.pixelSize: scanResultsPopup.height * 0.05
+                    color: '#ffedea'
+                    font.bold: true
+                    font.family: "Arial"
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width - closeBtn.width
+                }
+
+                Rectangle {
+                    id: closeBtn
+                    width: scanResultsPopup.height * 0.08
+                    height: width
+                    radius: width / 2
+                    color: closeBtnArea.containsMouse ? '#ff4422' : '#5a2a25'
+                    anchors.verticalCenter: parent.verticalCenter
+                    Behavior on color { ColorAnimation { duration: 120 } }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✕"
+                        font.pixelSize: parent.height * 0.5
+                        color: '#ffedea'
+                        font.family: "Arial"
+                    }
+                    MouseArea {
+                        id: closeBtnArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: scanResultsPopup.close()
+                    }
+                }
+            }
+
+            // Divider
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: '#ff5f46'
+                opacity: 0.5
+            }
+
+            // Network count
+            Text {
+                text: networkListModel.count + qsTr(" networks found")
+                font.pixelSize: scanResultsPopup.height * 0.032
+                color: '#ff8a7a'
+                font.family: "Arial"
+            }
+
+            // Scrollable list
+            ListView {
+                id: networkListView
+                width: parent.width
+                height: scanResultsPopup.height
+                        - scanResultsPopup.height * 0.1     // title row
+                        - 1                                  // divider
+                        - scanResultsPopup.height * 0.032    // count text
+                        - scanResultsPopup.width * 0.1       // top+bottom margins
+                        - scanResultsPopup.height * 0.015 * 3 // spacings
+                clip: true      // ensures content doesn't overflow
+                model: networkListModel // input data for the list
+                spacing: scanResultsPopup.height * 0.015
+
+                ScrollBar.vertical: ScrollBar {
+                    policy: ScrollBar.AsNeeded
+                    contentItem: Rectangle {
+                        implicitWidth: 4
+                        radius: 2
+                        color: '#ff6c55'
+                        opacity: 0.8
+                    }
+                }
+
+                // Empty state
+                Text {
+                    anchors.centerIn: parent
+                    visible: networkListView.count === 0
+                    text: qsTr("No networks found.\nTry scanning again.")
+                    font.pixelSize: scanResultsPopup.height * 0.04
+                    color: '#7a4a45'
+                    font.family: "Arial"
+                    horizontalAlignment: Text.AlignHCenter
+                }
+
+                // Delegate > one card per network
+                delegate: Rectangle {
+                    width: networkListView.width - 8
+                    height: scanResultsPopup.height * 0.11
+                    radius: height / 4
+                    color: rowHover.containsMouse ? '#3a1008' : '#200805'
+                    border.color: rowHover.containsMouse ? '#ff6c55' : '#3a1a15'
+                    border.width: 1
+                    Behavior on color { ColorAnimation { duration: 100 } }
+                    Behavior on border.color { ColorAnimation { duration: 100 } }
+
+                    Row {
+                        anchors.fill: parent
+                        anchors.leftMargin: parent.width * 0.04
+                        anchors.rightMargin: parent.width * 0.04
+                        spacing: parent.width * 0.03
+
+                        // Icon
+                        Text {
+                            text: "▲"
+                            font.pixelSize: parent.parent.height * 0.4
+                            color: '#ff8a7a'
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        // SSID
+                        Text {
+                            text: model.name
+                            font.pixelSize: parent.parent.height * 0.4
+                            color: '#ffedea'
+                            font.bold: true
+                            font.family: "Arial"
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width
+                                - selectBtn.width
+                                - parent.parent.height * 0.36
+                                - parent.spacing * 2
+                            elide: Text.ElideRight
+                        }
+
+                        // Select button
+                        Rectangle {
+                            id: selectBtn
+                            width: scanResultsPopup.width * 0.22
+                            height: parent.parent.height * 0.58
+                            radius: height / 3
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: selectArea.containsMouse ? '#aa2211' : '#ff6c55'
+                            Behavior on color { ColorAnimation { duration: 100 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: qsTr("Select")
+                                font.pixelSize: parent.height * 0.5
+                                color: '#fff5f3'
+                                font.bold: true
+                                font.family: "Arial"
+                            }
+
+                            MouseArea {
+                                id: selectArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onClicked: {
+                                    scanResultsPopup.close()
+                                    console.log("Selected network:", model.name)
+                                    WifiManager.connectToNetwork(model.name, "")
+                                }
+                            }
+                        }
+                    }
+
+                    // Hover detection for the whole row
+                    MouseArea {
+                        id: rowHover
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        propagateComposedEvents: true
+                        onClicked: (mouse) => mouse.accepted = false
+                    }
+                }
+            }
+        }
+    }
+
+    // Status
+    Rectangle {
+        id: statusToast
+        width: parent.width * 0.5
+        height: parent.height * 0.08
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: parent.height * 0.05
+        radius: height / 2
+        color: statusToast.isError ? '#3d0a00' : '#0a2e0a'
+        border.color: statusToast.isError ? '#ff4422' : '#44bb44'
+        border.width: 1
+        opacity: 0
+        visible: opacity > 0
+        z: 20   // ensure it appears above all other content
+
+        property bool isError: false
+
+        Behavior on opacity { NumberAnimation { duration: 400 } }
+
+        Text {
+            id: toastText
+            anchors.centerIn: parent
+            font.pixelSize: parent.height * 0.35
+            color: statusToast.isError ? '#ff8a7a' : '#88ff88'
+            font.family: "Arial"
+            font.bold: true
+        }
+
+        Timer {
+            id: toastTimer
+            interval: 3000
+            onTriggered: statusToast.opacity = 0
+        }
+    }
+
+    // Helper to show toast
+    function showToast(message, isError) {
+        toastText.text = message
+        statusToast.isError = isError
+        statusToast.opacity = 1
+        toastTimer.restart()
     }
 
     // Return to Main Page Button

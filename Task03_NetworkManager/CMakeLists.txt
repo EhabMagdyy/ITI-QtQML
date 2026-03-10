@@ -12,7 +12,8 @@ qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(appTask03_NetworkManager
     main.cpp
-    Backend/NetworkManager.cpp
+    Backend/WifiManager.cpp
+    Backend/BluetoothManager.cpp
 )
 
 qt_add_qml_module(appTask03_NetworkManager

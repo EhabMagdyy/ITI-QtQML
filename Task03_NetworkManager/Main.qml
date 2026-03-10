@@ -150,7 +150,8 @@ ApplicationWindow {
         Component {
             id: bluetoothPageComponent
             BluetoothPage {
-                id: bluetoothPage
+                id: btPage
+                stackView: stackView
             }
         }
     }
