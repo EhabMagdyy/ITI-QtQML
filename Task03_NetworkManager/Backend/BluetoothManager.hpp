@@ -5,7 +5,7 @@
 #include <QDBusObjectPath>
 #include <QDBusPendingCallWatcher>
 
-// ── Per-device watcher — one instance per subscribed device ──────────────────
+
 class DeviceWatcher : public QObject {
     Q_OBJECT
 public:
@@ -35,7 +35,6 @@ private:
     QString m_address;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 class BluetoothManager : public QObject {
     Q_OBJECT
 

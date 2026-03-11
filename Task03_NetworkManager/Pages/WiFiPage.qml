@@ -7,7 +7,7 @@ Rectangle {
     height: parent ? parent.height : 0
     color: "transparent"
     required property StackView stackView
-    
+
     // Backend Connections
     Connections {
         target: WifiManager
@@ -16,7 +16,7 @@ Rectangle {
             wifiSwitch.checked = enabled
         }
         function onScanStarted() {
-            console.log("Scanning for networks...")
+            showToast("Scanning for networks...", false)
         }
         function onScanFinished(networks) {
             networkListModel.clear()
@@ -32,6 +32,15 @@ Rectangle {
         }
         function onConnectFailed(reason) {
             showToast(reason, true)
+        }
+        function onPasswordRequired(ssid) {
+            passwordPopupSsid.text = ssid
+            passwordPopup.open()
+        }
+        // React to connected SSID changing (system-side or our call)
+        function onConnectedSsidChanged(ssid) {
+            if (ssid === "")
+                showToast("Disconnected", false)
         }
     }
 
@@ -104,7 +113,7 @@ Rectangle {
                     id: wifiSwitch
                     anchors.verticalCenter: parent.verticalCenter
                     checked: WifiManager.wifiEnabled
-                    onCheckedChanged: WifiManager.wifiEnabled = checked 
+                    onCheckedChanged: WifiManager.wifiEnabled = checked
                 }
             }
         }
@@ -125,7 +134,6 @@ Rectangle {
             Row {
                 anchors.centerIn: parent
                 spacing: parent.width * 0.03
-
                 Text {
                     text: "⟳"
                     font.pixelSize: parent.parent.height * 0.45
@@ -147,17 +155,9 @@ Rectangle {
                 anchors.fill: parent
                 enabled: wifiSwitch.checked
                 hoverEnabled: true
-                onEntered: {
-                    stop11.color = '#cc4433'
-                    stop12.color = '#aa2211'
-                }
-                onExited: {
-                    stop11.color = '#ff8a7a'
-                    stop12.color = '#e95441'
-                }
-                onClicked: {
-                    WifiManager.scanNetworks()
-                }
+                onEntered: { stop11.color = '#cc4433'; stop12.color = '#aa2211' }
+                onExited:  { stop11.color = '#ff8a7a'; stop12.color = '#e95441' }
+                onClicked:  WifiManager.scanNetworks()
             }
         }
 
@@ -169,7 +169,7 @@ Rectangle {
             opacity: 0.3
         }
 
-        // Connect Card
+        // Connect to Hidden Networks Card
         Rectangle {
             width: parent.width
             height: connectCol.implicitHeight + wifiPage.height * 0.1
@@ -218,7 +218,6 @@ Rectangle {
                         font.family: "Arial"
                         enabled: wifiSwitch.checked
                         clip: true
-                        // hint text
                         Text {
                             anchors.fill: parent
                             verticalAlignment: Text.AlignVCenter
@@ -252,7 +251,6 @@ Rectangle {
                         echoMode: TextInput.Password
                         enabled: wifiSwitch.checked
                         clip: true
-                        // hint text
                         Text {
                             anchors.fill: parent
                             verticalAlignment: Text.AlignVCenter
@@ -262,18 +260,13 @@ Rectangle {
                             font.family: "Arial"
                             visible: !passField.text && !passField.activeFocus
                         }
-
                         Keys.onPressed: (event) => {
-                            if(event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                                console.log('Enter pressed > Connecting')
-                                if(ssidField.text !== "" && passField.text !== "" && passField.text.length >= 8) {
-                                    console.log("Connecting to network:", ssidField.text)
+                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                if (ssidField.text !== "" && passField.text.length >= 8)
                                     WifiManager.connectToNetwork(ssidField.text, passField.text)
-                                } 
-                                else {
-                                    console.log("Please enter a valid SSID and password!")
-                                }
-                                event.accepted = true   // prevent default behavior (like adding a newline)
+                                else
+                                    showToast("Enter valid SSID and password (8+ chars)", true)
+                                event.accepted = true
                             }
                         }
                     }
@@ -284,7 +277,6 @@ Rectangle {
                     width: parent.width
                     height: wifiPage.height / 12
                     radius: height / 4
-                    
                     gradient: Gradient {
                         GradientStop { id: stop1; position: 0.0; color: connectArea.pressed ? '#cc4433' : '#ff6c55' }
                         GradientStop { id: stop2; position: 1.0; color: connectArea.pressed ? '#aa2211' : '#c94030' }
@@ -306,25 +298,13 @@ Rectangle {
                         anchors.fill: parent
                         enabled: wifiSwitch.checked
                         hoverEnabled: true
-                        onEntered: {
-                            stop1.color = '#cc4433'
-                            stop2.color = '#aa2211'
-                        }
-                        onExited: {
-                            stop1.color = '#ff6c55'
-                            stop2.color = '#c94030'
-                        }
-                        onClicked: parent.onConnectHandler()
-                    }
-                    function onConnectHandler(){
-                        if(ssidField.text !== "" && passField.text !== "" && passField.text.length >= 8) {
-                            // Pass ssidField.text + passField.text to backend
-                            console.log("Connecting to network:", ssidField.text)
-                            console.log("Password:", passField.text)
-                            WifiManager.connectToNetwork(ssidField.text, passField.text)
-                        } 
-                        else {
-                            console.log("Please enter a valid SSID and password!")
+                        onEntered: { stop1.color = '#cc4433'; stop2.color = '#aa2211' }
+                        onExited:  { stop1.color = '#ff6c55'; stop2.color = '#c94030' }
+                        onClicked: {
+                            if (ssidField.text !== "" && passField.text.length >= 8)
+                                WifiManager.connectToNetwork(ssidField.text, passField.text)
+                            else
+                                showToast("Enter valid SSID and password (8+ chars)", true)
                         }
                     }
                 }
@@ -334,14 +314,15 @@ Rectangle {
 
     ListModel { id: networkListModel }
 
+    // Scan Results Popup
     Popup {
         id: scanResultsPopup
         width: parent.width * 0.8
         height: parent.height * 0.7
         anchors.centerIn: parent
-        modal: true // prevents interaction with the background
-        focus: true // ensures it receives key events
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside    // closed when ESC Clicked & ckicking outside
+        modal: true
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
         background: Rectangle {
             gradient: Gradient {
@@ -419,13 +400,13 @@ Rectangle {
                 id: networkListView
                 width: parent.width
                 height: scanResultsPopup.height
-                        - scanResultsPopup.height * 0.1     // title row
-                        - 1                                  // divider
-                        - scanResultsPopup.height * 0.032    // count text
-                        - scanResultsPopup.width * 0.1       // top+bottom margins
-                        - scanResultsPopup.height * 0.015 * 3 // spacings
-                clip: true      // ensures content doesn't overflow
-                model: networkListModel // input data for the list
+                        - scanResultsPopup.height * 0.1
+                        - 1
+                        - scanResultsPopup.height * 0.032
+                        - scanResultsPopup.width * 0.1
+                        - scanResultsPopup.height * 0.015 * 3
+                clip: true
+                model: networkListModel
                 spacing: scanResultsPopup.height * 0.015
 
                 ScrollBar.vertical: ScrollBar {
@@ -438,7 +419,6 @@ Rectangle {
                     }
                 }
 
-                // Empty state
                 Text {
                     anchors.centerIn: parent
                     visible: networkListView.count === 0
@@ -449,7 +429,6 @@ Rectangle {
                     horizontalAlignment: Text.AlignHCenter
                 }
 
-                // Delegate > one card per network
                 delegate: Rectangle {
                     width: networkListView.width - 8
                     height: scanResultsPopup.height * 0.11
@@ -459,6 +438,9 @@ Rectangle {
                     border.width: 1
                     Behavior on color { ColorAnimation { duration: 100 } }
                     Behavior on border.color { ColorAnimation { duration: 100 } }
+
+                    // Is this the currently connected network?
+                    property bool isConnected: WifiManager.connectedSsid === model.name
 
                     Row {
                         anchors.fill: parent
@@ -470,7 +452,7 @@ Rectangle {
                         Text {
                             text: "▲"
                             font.pixelSize: parent.parent.height * 0.4
-                            color: '#ff8a7a'
+                            color: parent.parent.isConnected ? '#88ff88' : '#ff8a7a'
                             anchors.verticalCenter: parent.verticalCenter
                         }
 
@@ -478,31 +460,39 @@ Rectangle {
                         Text {
                             text: model.name
                             font.pixelSize: parent.parent.height * 0.4
-                            color: '#ffedea'
+                            color: parent.parent.isConnected ? '#88ff88' : '#ffedea'
                             font.bold: true
                             font.family: "Arial"
                             anchors.verticalCenter: parent.verticalCenter
                             width: parent.width
-                                - selectBtn.width
-                                - parent.parent.height * 0.36
-                                - parent.spacing * 2
+                                   - selectBtn.width
+                                   - parent.parent.height * 0.36
+                                   - parent.spacing * 2
                             elide: Text.ElideRight
                         }
 
-                        // Select button
+                        // Connect / Disconnect button
                         Rectangle {
                             id: selectBtn
-                            width: scanResultsPopup.width * 0.22
+                            width: scanResultsPopup.width * 0.26
                             height: parent.parent.height * 0.58
                             radius: height / 3
                             anchors.verticalCenter: parent.verticalCenter
-                            color: selectArea.containsMouse ? '#aa2211' : '#ff6c55'
-                            Behavior on color { ColorAnimation { duration: 100 } }
+
+                            // Green = connected, Red = not connected
+                            color: {
+                                if (parent.parent.isConnected)
+                                    return selectArea.containsMouse ? '#115511' : '#227722'
+                                return selectArea.containsMouse ? '#aa2211' : '#ff6c55'
+                            }
+                            Behavior on color { ColorAnimation { duration: 150 } }
 
                             Text {
                                 anchors.centerIn: parent
-                                text: qsTr("Select")
-                                font.pixelSize: parent.height * 0.5
+                                // Text changes based on state
+                                text: parent.parent.parent.isConnected
+                                      ? qsTr("Connected") : qsTr("Connect")
+                                font.pixelSize: parent.height * 0.36
                                 color: '#fff5f3'
                                 font.bold: true
                                 font.family: "Arial"
@@ -513,20 +503,26 @@ Rectangle {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 onClicked: {
-                                    scanResultsPopup.close()
-                                    console.log("Selected network:", model.name)
-                                    WifiManager.connectToNetwork(model.name, "")
+                                    if (parent.parent.parent.isConnected) {
+                                        // Already connected → disconnect
+                                        WifiManager.disconnectFromNetwork()
+                                        scanResultsPopup.close()
+                                    } else {
+                                        // Not connected → connect
+                                        WifiManager.connectToSelectedNetwork(model.name)
+                                        scanResultsPopup.close()
+                                    }
                                 }
                             }
                         }
                     }
 
-                    // Hover detection for the whole row
                     MouseArea {
                         id: rowHover
                         anchors.fill: parent
                         hoverEnabled: true
                         propagateComposedEvents: true
+                        z: -1
                         onClicked: (mouse) => mouse.accepted = false
                     }
                 }
@@ -534,7 +530,126 @@ Rectangle {
         }
     }
 
-    // Status
+    // Password Popup
+    Popup {
+        id: passwordPopup
+        width: parent.width * 0.7
+        height: parent.height * 0.38
+        anchors.centerIn: parent
+        modal: true
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        background: Rectangle {
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: '#1e0604' }
+                GradientStop { position: 1.0; color: '#120302' }
+            }
+            radius: 10
+            border.color: '#ff5f46'
+            border.width: 2
+        }
+
+        Column {
+            anchors.fill: parent
+            anchors.margins: passwordPopup.width * 0.06
+            spacing: wifiPage.height * 0.02
+
+            Text {
+                id: passwordPopupSsid
+                font.pixelSize: wifiPage.height * 0.028
+                color: '#ff8a7a'
+                font.bold: true
+                font.family: "Arial"
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+
+            Text {
+                text: qsTr("Enter password to connect")
+                font.pixelSize: wifiPage.height * 0.022
+                color: '#ffedea'
+                font.family: "Arial"
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+
+            Rectangle {
+                width: parent.width
+                height: wifiPage.height / 13
+                radius: height / 4
+                color: '#0d0302'
+                border.color: popupPassField.activeFocus ? '#ff6c55' : '#5a2a25'
+                border.width: popupPassField.activeFocus ? 2 : 1
+
+                TextInput {
+                    id: popupPassField
+                    anchors.fill: parent
+                    anchors.leftMargin: parent.width * 0.05
+                    anchors.rightMargin: parent.width * 0.05
+                    verticalAlignment: TextInput.AlignVCenter
+                    font.pixelSize: parent.height * 0.38
+                    color: '#ffedea'
+                    font.family: "Arial"
+                    echoMode: TextInput.Password
+                    clip: true
+                    Text {
+                        anchors.fill: parent
+                        verticalAlignment: Text.AlignVCenter
+                        text: qsTr("Password")
+                        font.pixelSize: parent.height * 0.38
+                        color: '#7a4a45'
+                        font.family: "Arial"
+                        visible: !popupPassField.text && !popupPassField.activeFocus
+                    }
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            if (popupPassField.text.length >= 8) {
+                                WifiManager.connectToNetwork(passwordPopupSsid.text, popupPassField.text)
+                                popupPassField.text = ""
+                                passwordPopup.close()
+                            } else {
+                                showToast("Password must be 8+ characters", true)
+                            }
+                            event.accepted = true
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                width: parent.width
+                height: wifiPage.height / 12
+                radius: height / 4
+                color: popupConnectArea.containsMouse ? '#cc4433' : '#ff6c55'
+                Behavior on color { ColorAnimation { duration: 100 } }
+
+                Text {
+                    anchors.centerIn: parent
+                    text: qsTr("Connect")
+                    font.pixelSize: parent.height * 0.38
+                    color: '#fff5f3'
+                    font.bold: true
+                    font.family: "Arial"
+                }
+
+                MouseArea {
+                    id: popupConnectArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: {
+                        if (popupPassField.text.length >= 8) {
+                            WifiManager.connectToNetwork(passwordPopupSsid.text, popupPassField.text)
+                            popupPassField.text = ""
+                            passwordPopup.close()
+                        } else {
+                            showToast("Password must be 8+ characters", true)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Status Toast
     Rectangle {
         id: statusToast
         width: parent.width * 0.5
@@ -548,10 +663,8 @@ Rectangle {
         border.width: 1
         opacity: 0
         visible: opacity > 0
-        z: 20   // ensure it appears above all other content
-
+        z: 20
         property bool isError: false
-
         Behavior on opacity { NumberAnimation { duration: 400 } }
 
         Text {
@@ -562,7 +675,6 @@ Rectangle {
             font.family: "Arial"
             font.bold: true
         }
-
         Timer {
             id: toastTimer
             interval: 3000
@@ -570,7 +682,6 @@ Rectangle {
         }
     }
 
-    // Helper to show toast
     function showToast(message, isError) {
         toastText.text = message
         statusToast.isError = isError
@@ -578,7 +689,7 @@ Rectangle {
         toastTimer.restart()
     }
 
-    // Return to Main Page Button
+    // Back Button
     Rectangle {
         width: parent.width / 6.5
         height: parent.height / 15
@@ -604,7 +715,7 @@ Rectangle {
             anchors.fill: parent
             hoverEnabled: true
             onEntered: parent.color = '#ffd4ce'
-            onExited: parent.color = '#fffaf8'
+            onExited:  parent.color = '#fffaf8'
             onClicked: wifiPage.stackView.pop()
         }
     }

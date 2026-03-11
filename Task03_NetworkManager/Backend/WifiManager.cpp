@@ -1,65 +1,166 @@
-// wifimanager.cpp
 #include "WifiManager.hpp"
 #include <QDBusReply>
 #include <QDBusMetaType>
+#include <QSet>
 
-WifiManager::WifiManager(QObject *parent) : QObject(parent) {
-
-    // Connect to NetworkManager on the SYSTEM bus
+// ─────────────────────────────────────────────────────────────────────────────
+WifiManager::WifiManager(QObject *parent) : QObject(parent)
+{
     m_nmInterface = new QDBusInterface(
-        "org.freedesktop.NetworkManager",          // service
-        "/org/freedesktop/NetworkManager",         // object path
-        "org.freedesktop.NetworkManager",          // interface
+        "org.freedesktop.NetworkManager",
+        "/org/freedesktop/NetworkManager",
+        "org.freedesktop.NetworkManager",
         QDBusConnection::systemBus(),
         this
     );
+
     qDBusRegisterMetaType<NMConnectionSettings>();
 
-    // 1. Read initial state on startup
+    // Read initial Wi-Fi enabled state
     QVariant val = m_nmInterface->property("WirelessEnabled");
     if (val.isValid())
         m_wifiEnabled = val.toBool();
 
-    // 2. Subscribe to PropertiesChanged signal
-    //    so we react when wifi is toggled OUTSIDE our app
+    // Subscribe to PropertiesChanged — catches toggles from outside the app
     QDBusConnection::systemBus().connect(
         "org.freedesktop.NetworkManager",
         "/org/freedesktop/NetworkManager",
         "org.freedesktop.DBus.Properties",
         "PropertiesChanged",
         this,
-        // slot to handle the signal and update m_wifiEnabled + notify QML
         SLOT(onPropertiesChanged(QString, QVariantMap, QStringList))
     );
+
+    // Read which network is currently connected at startup
+    updateConnectedSsid();
 }
 
-bool WifiManager::wifiEnabled() const {
+// ── Getters ───────────────────────────────────────────────────────────────────
+bool WifiManager::wifiEnabled() const
+{
     return m_wifiEnabled;
 }
 
-void WifiManager::setWifiEnabled(bool enabled) {
+// ── Toggle Wi-Fi ──────────────────────────────────────────────────────────────
+void WifiManager::setWifiEnabled(bool enabled)
+{
     if (m_wifiEnabled == enabled) return;
-
-    // Write WirelessEnabled property via D-Bus
     m_nmInterface->setProperty("WirelessEnabled", QVariant::fromValue(enabled));
 }
 
+// ── Slot: system property changed ─────────────────────────────────────────────
 void WifiManager::onPropertiesChanged(QString interface,
                                       QVariantMap changedProps,
-                                      QStringList invalidatedProps) {
+                                      QStringList invalidatedProps)
+{
     Q_UNUSED(interface)
     Q_UNUSED(invalidatedProps)
 
     if (changedProps.contains("WirelessEnabled")) {
         m_wifiEnabled = changedProps["WirelessEnabled"].toBool();
-        emit wifiEnabledChanged(m_wifiEnabled); // QML switch updates here
+        emit wifiEnabledChanged(m_wifiEnabled);
+    }
+
+    // Active connections changed — refresh connected SSID
+    if (changedProps.contains("ActiveConnections")) {
+        updateConnectedSsid();
     }
 }
 
-void WifiManager::scanNetworks() {
+// ── Read currently connected SSID from NetworkManager ────────────────────────
+void WifiManager::updateConnectedSsid()
+{
+    QVariant activeConnsVar = m_nmInterface->property("ActiveConnections");
+    if (!activeConnsVar.isValid()) {
+        m_connectedSsid = "";
+        emit connectedSsidChanged(m_connectedSsid);
+        return;
+    }
+
+    const QList<QDBusObjectPath> activeConns =
+        activeConnsVar.value<QList<QDBusObjectPath>>();
+
+    for (const QDBusObjectPath &acPath : activeConns) {
+        QDBusInterface acIface(
+            "org.freedesktop.NetworkManager",
+            acPath.path(),
+            "org.freedesktop.NetworkManager.Connection.Active",
+            QDBusConnection::systemBus()
+        );
+
+        if (acIface.property("Type").toString() != "802-11-wireless") continue;
+
+        QDBusObjectPath connPath =
+            acIface.property("Connection").value<QDBusObjectPath>();
+
+        QDBusInterface connIface(
+            "org.freedesktop.NetworkManager",
+            connPath.path(),
+            "org.freedesktop.NetworkManager.Settings.Connection",
+            QDBusConnection::systemBus()
+        );
+
+        QDBusReply<NMConnectionSettings> settings = connIface.call("GetSettings");
+        if (!settings.isValid()) continue;
+
+        QByteArray ssidBytes = settings.value()
+            .value("802-11-wireless")
+            .value("ssid")
+            .toByteArray();
+
+        QString ssid = QString::fromUtf8(ssidBytes);
+        if (!ssid.isEmpty()) {
+            if (m_connectedSsid != ssid) {
+                m_connectedSsid = ssid;
+                emit connectedSsidChanged(m_connectedSsid);
+            }
+            return;
+        }
+    }
+
+    // No active Wi-Fi connection
+    if (!m_connectedSsid.isEmpty()) {
+        m_connectedSsid = "";
+        emit connectedSsidChanged(m_connectedSsid);
+    }
+}
+
+// ── Disconnect from current active Wi-Fi connection ───────────────────────────
+void WifiManager::disconnectFromNetwork()
+{
+    QVariant activeConnsVar = m_nmInterface->property("ActiveConnections");
+    if (!activeConnsVar.isValid()) return;
+
+    const QList<QDBusObjectPath> activeConns =
+        activeConnsVar.value<QList<QDBusObjectPath>>();
+
+    for (const QDBusObjectPath &acPath : activeConns) {
+        QDBusInterface acIface(
+            "org.freedesktop.NetworkManager",
+            acPath.path(),
+            "org.freedesktop.NetworkManager.Connection.Active",
+            QDBusConnection::systemBus()
+        );
+
+        if (acIface.property("Type").toString() != "802-11-wireless") continue;
+
+        QDBusMessage reply = m_nmInterface->call(
+            "DeactivateConnection",
+            QVariant::fromValue(acPath)
+        );
+
+        if (reply.type() == QDBusMessage::ErrorMessage)
+            qWarning() << "Disconnect failed:" << reply.errorMessage();
+
+        return;
+    }
+}
+
+// ── Scan for nearby networks ──────────────────────────────────────────────────
+void WifiManager::scanNetworks()
+{
     emit scanStarted();
 
-    // Get ALL devices, find the wireless one dynamically
     QDBusReply<QList<QDBusObjectPath>> devicesReply =
         m_nmInterface->call("GetDevices");
 
@@ -76,7 +177,6 @@ void WifiManager::scanNetworks() {
             "org.freedesktop.NetworkManager.Device",
             QDBusConnection::systemBus()
         );
-        // Device type 2 = NM_DEVICE_TYPE_WIFI
         if (devIface.property("DeviceType").toUInt() == 2) {
             wirelessDevicePath = path.path();
             break;
@@ -101,10 +201,13 @@ void WifiManager::scanNetworks() {
         return;
     }
 
+    // Collect access points — deduplicate by SSID
+    QStringList networks;
+    QSet<QString> seen;
+
     QDBusReply<QList<QDBusObjectPath>> apReply =
         deviceIface.call("GetAllAccessPoints");
 
-    QStringList networks;
     if (apReply.isValid()) {
         for (const QDBusObjectPath &apPath : apReply.value()) {
             QDBusInterface apIface(
@@ -113,30 +216,89 @@ void WifiManager::scanNetworks() {
                 "org.freedesktop.NetworkManager.AccessPoint",
                 QDBusConnection::systemBus()
             );
-            QString ssid = QString::fromUtf8(
-                apIface.property("Ssid").toByteArray()
-            );
-            if (!ssid.isEmpty())
-                networks << ssid;
+
+            QByteArray ssidBytes = apIface.property("Ssid").toByteArray();
+            QString ssid = QString::fromUtf8(ssidBytes).trimmed();
+
+            if (ssid.isEmpty()) continue;       // skip hidden networks
+            if (seen.contains(ssid)) continue;  // skip duplicate BSSIDs
+
+            seen.insert(ssid);
+            networks << ssid;
         }
     }
 
     emit scanFinished(networks);
 }
 
-void WifiManager::connectToNetwork(const QString &ssid, const QString &password) {
+// ── Connect to a network — check saved profiles first ────────────────────────
+void WifiManager::connectToNetwork(const QString &ssid, const QString &password)
+{
     if (ssid.isEmpty()) {
         emit connectFailed("SSID cannot be empty");
         return;
     }
 
+    // Check if a saved profile already exists — avoid creating duplicates
+    QDBusInterface settingsIface(
+        "org.freedesktop.NetworkManager",
+        "/org/freedesktop/NetworkManager/Settings",
+        "org.freedesktop.NetworkManager.Settings",
+        QDBusConnection::systemBus()
+    );
+
+    QDBusReply<QList<QDBusObjectPath>> connList =
+        settingsIface.call("ListConnections");
+
+    if (connList.isValid()) {
+        for (const QDBusObjectPath &connPath : connList.value()) {
+            QDBusInterface connIface(
+                "org.freedesktop.NetworkManager",
+                connPath.path(),
+                "org.freedesktop.NetworkManager.Settings.Connection",
+                QDBusConnection::systemBus()
+            );
+
+            QDBusReply<NMConnectionSettings> settings =
+                connIface.call("GetSettings");
+            if (!settings.isValid()) continue;
+
+            QByteArray profileSsidBytes = settings.value()
+                .value("802-11-wireless")
+                .value("ssid")
+                .toByteArray();
+
+            QString profileSsid = QString::fromUtf8(profileSsidBytes);
+
+            if (profileSsid == ssid) {
+                // Profile exists — activate it without creating a new one
+                QDBusMessage reply = m_nmInterface->call(
+                    "ActivateConnection",
+                    QVariant::fromValue(connPath),
+                    QVariant::fromValue(QDBusObjectPath("/")),
+                    QVariant::fromValue(QDBusObjectPath("/"))
+                );
+                if (reply.type() == QDBusMessage::ErrorMessage) {
+                    emit connectFailed(reply.errorMessage());
+                    return;
+                }
+                QDBusObjectPath activeConnPath =
+                    reply.arguments().at(0).value<QDBusObjectPath>();
+                watchActiveConnection(activeConnPath.path(), ssid);
+                return;
+            }
+        }
+    }
+
+    // No saved profile — create new connection
     QVariantMap connectionSettings;
     connectionSettings["type"] = "802-11-wireless";
     connectionSettings["id"]   = ssid;
 
     QVariantMap wirelessSettings;
-    wirelessSettings["ssid"] = ssid.toUtf8();
-    wirelessSettings["mode"] = "infrastructure";
+    wirelessSettings["ssid"]   = ssid.toUtf8();
+    wirelessSettings["mode"]   = "infrastructure";
+    wirelessSettings["hidden"] = true;
 
     QVariantMap securitySettings;
     securitySettings["key-mgmt"] = "wpa-psk";
@@ -147,14 +309,7 @@ void WifiManager::connectToNetwork(const QString &ssid, const QString &password)
     allSettings["802-11-wireless"]          = wirelessSettings;
     allSettings["802-11-wireless-security"] = securitySettings;
 
-    QDBusInterface nmIface(
-        "org.freedesktop.NetworkManager",
-        "/org/freedesktop/NetworkManager",
-        "org.freedesktop.NetworkManager",
-        QDBusConnection::systemBus()
-    );
-
-    QDBusMessage reply = nmIface.call(
+    QDBusMessage reply = m_nmInterface->call(
         "AddAndActivateConnection",
         QVariant::fromValue(allSettings),
         QVariant::fromValue(QDBusObjectPath("/")),
@@ -166,16 +321,74 @@ void WifiManager::connectToNetwork(const QString &ssid, const QString &password)
         return;
     }
 
-    QDBusObjectPath activeConnPath = reply.arguments().at(1).value<QDBusObjectPath>();
+    QDBusObjectPath activeConnPath =
+        reply.arguments().at(1).value<QDBusObjectPath>();
     watchActiveConnection(activeConnPath.path(), ssid);
 }
 
+// ── Connect to a network from scan results ────────────────────────────────────
+void WifiManager::connectToSelectedNetwork(const QString &ssid)
+{
+    QDBusInterface settingsIface(
+        "org.freedesktop.NetworkManager",
+        "/org/freedesktop/NetworkManager/Settings",
+        "org.freedesktop.NetworkManager.Settings",
+        QDBusConnection::systemBus()
+    );
+
+    QDBusReply<QList<QDBusObjectPath>> connList =
+        settingsIface.call("ListConnections");
+
+    if (connList.isValid()) {
+        for (const QDBusObjectPath &connPath : connList.value()) {
+            QDBusInterface connIface(
+                "org.freedesktop.NetworkManager",
+                connPath.path(),
+                "org.freedesktop.NetworkManager.Settings.Connection",
+                QDBusConnection::systemBus()
+            );
+
+            QDBusReply<NMConnectionSettings> settings =
+                connIface.call("GetSettings");
+            if (!settings.isValid()) continue;
+
+            QByteArray profileSsidBytes = settings.value()
+                .value("802-11-wireless")
+                .value("ssid")
+                .toByteArray();
+
+            QString profileSsid = QString::fromUtf8(profileSsidBytes);
+
+            if (profileSsid == ssid) {
+                QDBusMessage reply = m_nmInterface->call(
+                    "ActivateConnection",
+                    QVariant::fromValue(connPath),
+                    QVariant::fromValue(QDBusObjectPath("/")),
+                    QVariant::fromValue(QDBusObjectPath("/"))
+                );
+                if (reply.type() == QDBusMessage::ErrorMessage) {
+                    emit connectFailed(reply.errorMessage());
+                    return;
+                }
+                QDBusObjectPath activeConnPath =
+                    reply.arguments().at(0).value<QDBusObjectPath>();
+                watchActiveConnection(activeConnPath.path(), ssid);
+                return;
+            }
+        }
+    }
+
+    // No saved profile found — ask QML for password
+    emit passwordRequired(ssid);
+}
+
+// ── Watch active connection state changes ─────────────────────────────────────
 void WifiManager::watchActiveConnection(const QString &activeConnPath,
-                                        const QString &ssid) {
+                                        const QString &ssid)
+{
     m_pendingSsid    = ssid;
     m_activeConnPath = activeConnPath;
 
-    // Subscribe to state changes on the active connection object
     QDBusConnection::systemBus().connect(
         "org.freedesktop.NetworkManager",
         activeConnPath,
@@ -186,9 +399,11 @@ void WifiManager::watchActiveConnection(const QString &activeConnPath,
     );
 }
 
+// ── Slot: active connection state changed ─────────────────────────────────────
 void WifiManager::onActiveConnPropertiesChanged(QString interface,
                                                 QVariantMap changedProps,
-                                                QStringList invalidatedProps) {
+                                                QStringList invalidatedProps)
+{
     Q_UNUSED(interface)
     Q_UNUSED(invalidatedProps)
 
@@ -197,11 +412,11 @@ void WifiManager::onActiveConnPropertiesChanged(QString interface,
     uint state = changedProps["State"].toUInt();
 
     // NM Active Connection States:
-    // 0 = Unknown, 1 = Activating, 2 = Activated, 3 = Deactivating, 4 = Deactivated
+    // 1 = Activating, 2 = Activated, 3 = Deactivating, 4 = Deactivated
     switch (state) {
         case 2:
             emit connectSuccess(m_pendingSsid);
-            // Unsubscribe — we got our answer
+            updateConnectedSsid();
             QDBusConnection::systemBus().disconnect(
                 "org.freedesktop.NetworkManager",
                 m_activeConnPath,
@@ -213,6 +428,7 @@ void WifiManager::onActiveConnPropertiesChanged(QString interface,
             break;
         case 4:
             emit connectFailed("Could not connect to: " + m_pendingSsid);
+            updateConnectedSsid();
             QDBusConnection::systemBus().disconnect(
                 "org.freedesktop.NetworkManager",
                 m_activeConnPath,
