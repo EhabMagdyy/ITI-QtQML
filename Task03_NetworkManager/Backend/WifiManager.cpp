@@ -3,7 +3,6 @@
 #include <QDBusMetaType>
 #include <QSet>
 
-// ─────────────────────────────────────────────────────────────────────────────
 WifiManager::WifiManager(QObject *parent) : QObject(parent)
 {
     m_nmInterface = new QDBusInterface(
@@ -35,20 +34,20 @@ WifiManager::WifiManager(QObject *parent) : QObject(parent)
     updateConnectedSsid();
 }
 
-// ── Getters ───────────────────────────────────────────────────────────────────
+// Getters 
 bool WifiManager::wifiEnabled() const
 {
     return m_wifiEnabled;
 }
 
-// ── Toggle Wi-Fi ──────────────────────────────────────────────────────────────
+// Toggle Wi-Fi 
 void WifiManager::setWifiEnabled(bool enabled)
 {
     if (m_wifiEnabled == enabled) return;
     m_nmInterface->setProperty("WirelessEnabled", QVariant::fromValue(enabled));
 }
 
-// ── Slot: system property changed ─────────────────────────────────────────────
+// Slot: system property changed 
 void WifiManager::onPropertiesChanged(QString interface,
                                       QVariantMap changedProps,
                                       QStringList invalidatedProps)
@@ -67,7 +66,7 @@ void WifiManager::onPropertiesChanged(QString interface,
     }
 }
 
-// ── Read currently connected SSID from NetworkManager ────────────────────────
+// Read currently connected SSID from NetworkManager
 void WifiManager::updateConnectedSsid()
 {
     QVariant activeConnsVar = m_nmInterface->property("ActiveConnections");
@@ -125,7 +124,7 @@ void WifiManager::updateConnectedSsid()
     }
 }
 
-// ── Disconnect from current active Wi-Fi connection ───────────────────────────
+// Disconnect from current active Wi-Fi connection
 void WifiManager::disconnectFromNetwork()
 {
     QVariant activeConnsVar = m_nmInterface->property("ActiveConnections");
@@ -156,7 +155,7 @@ void WifiManager::disconnectFromNetwork()
     }
 }
 
-// ── Scan for nearby networks ──────────────────────────────────────────────────
+// Scan for nearby networks
 void WifiManager::scanNetworks()
 {
     emit scanStarted();
@@ -231,7 +230,7 @@ void WifiManager::scanNetworks()
     emit scanFinished(networks);
 }
 
-// ── Connect to a network — check saved profiles first ────────────────────────
+// Connect to a network — check saved profiles first
 void WifiManager::connectToNetwork(const QString &ssid, const QString &password)
 {
     if (ssid.isEmpty()) {
@@ -326,7 +325,7 @@ void WifiManager::connectToNetwork(const QString &ssid, const QString &password)
     watchActiveConnection(activeConnPath.path(), ssid);
 }
 
-// ── Connect to a network from scan results ────────────────────────────────────
+// Connect to a network from scan results
 void WifiManager::connectToSelectedNetwork(const QString &ssid)
 {
     QDBusInterface settingsIface(
@@ -382,7 +381,7 @@ void WifiManager::connectToSelectedNetwork(const QString &ssid)
     emit passwordRequired(ssid);
 }
 
-// ── Watch active connection state changes ─────────────────────────────────────
+// Watch active connection state changes
 void WifiManager::watchActiveConnection(const QString &activeConnPath,
                                         const QString &ssid)
 {
@@ -399,7 +398,7 @@ void WifiManager::watchActiveConnection(const QString &activeConnPath,
     );
 }
 
-// ── Slot: active connection state changed ─────────────────────────────────────
+// Slot: active connection state changed
 void WifiManager::onActiveConnPropertiesChanged(QString interface,
                                                 QVariantMap changedProps,
                                                 QStringList invalidatedProps)

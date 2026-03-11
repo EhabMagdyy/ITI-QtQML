@@ -68,7 +68,7 @@ Rectangle{
             showToast(reason, true)
         }
 
-        // ✅ Disconnect handlers
+        // Disconnect handlers
         function onDisconnectSuccess(name){
             btPage.disconnectingAddress = ""
             showToast("Disconnected from " + name, false)
@@ -322,7 +322,7 @@ Rectangle{
                             }
                         }
 
-                        // ✅ Connect / Disconnect button
+                        // Connect / Disconnect button
                         Rectangle{
                             id: connectBtn
                             width: btPage.width * 0.22
@@ -361,11 +361,11 @@ Rectangle{
                                          && !parent.parent.parent.isDisconnecting
                                 onClicked: {
                                     if (parent.parent.parent.isConnected) {
-                                        // ✅ Disconnect
+                                        // Disconnect
                                         btPage.disconnectingAddress = model.address
                                         BluetoothManager.disconnectDevice(model.address)
                                     } else {
-                                        // ✅ Connect
+                                        // Connect
                                         btPage.connectingAddress = model.address
                                         BluetoothManager.connectDevice(model.address)
                                     }

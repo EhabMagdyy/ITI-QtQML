@@ -5,7 +5,7 @@
 #include <QDBusPendingReply>
 #include <QTimer>
 
-// ─── D-Bus custom type registration ─────────────────────────────────────────
+// D-Bus custom type registration
 typedef QMap<QString, QVariantMap>              DBusInterfaceMap;
 typedef QMap<QDBusObjectPath, DBusInterfaceMap> DBusManagedObjects;
 Q_DECLARE_METATYPE(DBusInterfaceMap)
@@ -65,7 +65,7 @@ const QDBusArgument &operator>>(const QDBusArgument &arg, DBusManagedObjects &ma
     return arg;
 }
 
-// ─── BlueZ D-Bus constants ───────────────────────────────────────────────────
+// BlueZ D-Bus constants
 static const QString BZ_SERVICE = "org.bluez";
 static const QString BZ_ADAPTER = "org.bluez.Adapter1";
 static const QString BZ_DEVICE  = "org.bluez.Device1";
@@ -73,7 +73,7 @@ static const QString BZ_OBJ_MGR = "org.freedesktop.DBus.ObjectManager";
 static const QString BZ_PROPS   = "org.freedesktop.DBus.Properties";
 static const QString BZ_ROOT    = "/";
 
-// ── Helper: get all managed BlueZ objects ────────────────────────────────────
+// Helper: get all managed BlueZ objects
 static DBusManagedObjects getManagedObjects()
 {
     qDBusRegisterMetaType<DBusInterfaceMap>();
@@ -89,7 +89,6 @@ static DBusManagedObjects getManagedObjects()
     return result;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 BluetoothManager::BluetoothManager(QObject *parent) : QObject(parent)
 {
     qDBusRegisterMetaType<DBusInterfaceMap>();
@@ -120,7 +119,7 @@ BluetoothManager::BluetoothManager(QObject *parent) : QObject(parent)
     subscribeToAllKnownDevices();
 }
 
-// ── Subscribe to every device BlueZ already knows at startup ─────────────────
+// Subscribe to every device BlueZ already knows at startup
 void BluetoothManager::subscribeToAllKnownDevices()
 {
     DBusManagedObjects objects = getManagedObjects();
@@ -141,7 +140,7 @@ void BluetoothManager::subscribeToAllKnownDevices()
     }
 }
 
-// ── Find the first valid Bluetooth adapter path ───────────────────────────────
+// Find the first valid Bluetooth adapter path
 QString BluetoothManager::getAdapterPath()
 {
     for (const QString &path : { QString("/org/bluez/hci0"),
@@ -154,7 +153,7 @@ QString BluetoothManager::getAdapterPath()
     return {};
 }
 
-// ── Find a device's D-Bus path by MAC address ─────────────────────────────────
+// Find a device's D-Bus path by MAC address
 QString BluetoothManager::findDevicePath(const QString &address)
 {
     DBusManagedObjects objects = getManagedObjects();
@@ -168,7 +167,7 @@ QString BluetoothManager::findDevicePath(const QString &address)
     return {};
 }
 
-// ── Subscribe to a single device's PropertiesChanged signal ──────────────────
+// Subscribe to a single device's PropertiesChanged signal
 void BluetoothManager::subscribeToDevice(const QString &path, const QString &address)
 {
     if (m_subscribedPaths.contains(path)) return;
@@ -194,7 +193,7 @@ void BluetoothManager::subscribeToDevice(const QString &path, const QString &add
     }
 }
 
-// ── Getters / Setters ─────────────────────────────────────────────────────────
+// Getters / Setters
 bool BluetoothManager::bluetoothEnabled() const
 {
     return m_bluetoothEnabled;
@@ -220,7 +219,7 @@ void BluetoothManager::setBluetoothEnabled(bool enabled)
         qWarning() << "BT Set Powered failed:" << reply.errorMessage();
 }
 
-// ── Adapter property changed ──────────────────────────────────────────────────
+// Adapter property changed
 void BluetoothManager::onAdapterPropertiesChanged(QString interface,
                                                    QVariantMap changedProps,
                                                    QStringList invalidatedProps)
@@ -239,7 +238,7 @@ void BluetoothManager::onInterfacesAdded(const QDBusObjectPath &path,
     Q_UNUSED(path) Q_UNUSED(interfaces)
 }
 
-// ── Scan for nearby Bluetooth devices ────────────────────────────────────────
+// Scan for nearby Bluetooth devices
 void BluetoothManager::scanDevices()
 {
     if (!m_adapterIface || !m_adapterIface->isValid()) {
@@ -284,7 +283,7 @@ void BluetoothManager::scanDevices()
     });
 }
 
-// ── Pair with a device by MAC address ────────────────────────────────────────
+// Pair with a device by MAC address
 void BluetoothManager::pairDevice(const QString &address)
 {
     QString path = findDevicePath(address);
@@ -311,7 +310,7 @@ void BluetoothManager::pairDevice(const QString &address)
     emit pairSuccess(name);
 }
 
-// ── Connect to a device — async so UI shows "Connecting..." state ─────────────
+// Connect to a device — async so UI shows "Connecting..." state
 void BluetoothManager::connectDevice(const QString &address)
 {
     QString path = findDevicePath(address);
@@ -341,7 +340,7 @@ void BluetoothManager::connectDevice(const QString &address)
     });
 }
 
-// ── Disconnect from a device — async ─────────────────────────────────────────
+// Disconnect from a device — async
 void BluetoothManager::disconnectDevice(const QString &address)
 {
     QString path = findDevicePath(address);
