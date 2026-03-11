@@ -7,24 +7,27 @@ Rectangle{
     height: parent ? parent.height : 0
     color: "transparent"
     required property StackView stackView
+    property bool updatingFromBackend: false
 
-    // Track which device is connecting / connected
-    property string connectingAddress: ""
-    property var    connectedAddresses: []
+    property string connectingAddress:    ""
+    property string disconnectingAddress: ""        // ← track disconnect in progress
+    property var    connectedAddresses:   []
 
     Connections{
         target: BluetoothManager
 
         function onBluetoothEnabledChanged(enabled){
+            btPage.updatingFromBackend = true
             btSwitch.checked = enabled
+            btPage.updatingFromBackend = false
         }
         function onScanStarted(){
             showToast("Scanning for devices...", false)
         }
         function onScanFinished(devices){
             deviceListModel.clear()
-            var newConnected = btPage.connectedAddresses.slice() 
-            for (var i = 0; i < devices.length; i++) {
+            var newConnected = btPage.connectedAddresses.slice()
+            for (var i = 0; i < devices.length; i++){
                 var parts  = devices[i].split("|")
                 var isConn = parts[2] === "1"
                 deviceListModel.append({ "name": parts[0], "address": parts[1] })
@@ -37,24 +40,23 @@ Rectangle{
         function onPairSuccess(name) { showToast("Paired with " + name, false) }
         function onPairFailed(reason){ showToast("Pair failed: " + reason, true) }
 
-        // onDeviceConnectionChanged
-        function onDeviceConnectionChanged(address, connected) {
-            var list = btPage.connectedAddresses.slice() 
+        function onDeviceConnectionChanged(address, connected){
+            var list = btPage.connectedAddresses.slice()
             var idx  = list.indexOf(address)
-            if (connected && idx === -1) {
+            if (connected && idx === -1)
                 list.push(address)
-            } else if (!connected && idx !== -1) {
+            else if (!connected && idx !== -1)
                 list.splice(idx, 1)
-            }
-            btPage.connectedAddresses = list               // ← QML now sees a NEW array = re-evaluates
+            btPage.connectedAddresses = list
 
             if (address === btPage.connectingAddress)
                 btPage.connectingAddress = ""
+            if (address === btPage.disconnectingAddress)
+                btPage.disconnectingAddress = ""
         }
 
-        //  onConnectSuccess
-        function onConnectSuccess(name) {
-            var list = btPage.connectedAddresses.slice()           // ← new array
+        function onConnectSuccess(name){
+            var list = btPage.connectedAddresses.slice()
             if (list.indexOf(btPage.connectingAddress) === -1)
                 list.push(btPage.connectingAddress)
             btPage.connectedAddresses = list
@@ -64,6 +66,16 @@ Rectangle{
         function onConnectFailed(reason){
             btPage.connectingAddress = ""
             showToast(reason, true)
+        }
+
+        // ✅ Disconnect handlers
+        function onDisconnectSuccess(name){
+            btPage.disconnectingAddress = ""
+            showToast("Disconnected from " + name, false)
+        }
+        function onDisconnectFailed(reason){
+            btPage.disconnectingAddress = ""
+            showToast("Disconnect failed: " + reason, true)
         }
     }
 
@@ -78,7 +90,6 @@ Rectangle{
         anchors.bottomMargin: btPage.height * 0.05
         spacing: btPage.height * 0.02
 
-        // Page Title
         Text{
             text: qsTr("Bluetooth Settings")
             font.pixelSize: btPage.width / 22
@@ -88,7 +99,6 @@ Rectangle{
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
-        // Divider
         Rectangle{
             width: parent.width
             height: 1
@@ -117,7 +127,6 @@ Rectangle{
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width - btSwitch.width - parent.anchors.leftMargin - parent.anchors.rightMargin
                     spacing: 2
-
                     Text{
                         text: qsTr("Bluetooth")
                         font.pixelSize: btPage.height * 0.025
@@ -173,7 +182,6 @@ Rectangle{
             Row{
                 anchors.centerIn: parent
                 spacing: parent.width * 0.03
-
                 Text{
                     text: "⟳"
                     font.pixelSize: parent.parent.height * 0.45
@@ -201,7 +209,6 @@ Rectangle{
             }
         }
 
-        // Divider
         Rectangle{
             width: parent.width
             height: 1
@@ -270,8 +277,9 @@ Rectangle{
                     Behavior on color{ ColorAnimation{ duration: 100 } }
                     Behavior on border.color{ ColorAnimation{ duration: 100 } }
 
-                    property bool isConnecting: model.address === btPage.connectingAddress
-                    property bool isConnected:  btPage.connectedAddresses.indexOf(model.address) !== -1
+                    property bool isConnecting:    model.address === btPage.connectingAddress
+                    property bool isDisconnecting: model.address === btPage.disconnectingAddress
+                    property bool isConnected:     btPage.connectedAddresses.indexOf(model.address) !== -1
 
                     Row{
                         anchors.fill: parent
@@ -279,15 +287,14 @@ Rectangle{
                         anchors.rightMargin: parent.width * 0.04
                         spacing: parent.width * 0.02
 
-                        // Bluetooth icon
                         Text{
                             text: "⬡"
                             font.pixelSize: parent.parent.height * 0.38
-                            color: '#ff8a7a'
+                            color: parent.parent.isConnected ? '#88ff88' : '#ff8a7a'
                             anchors.verticalCenter: parent.verticalCenter
+                            Behavior on color { ColorAnimation { duration: 200 } }
                         }
 
-                        // Device name + address
                         Column{
                             anchors.verticalCenter: parent.verticalCenter
                             width: parent.width
@@ -315,28 +322,32 @@ Rectangle{
                             }
                         }
 
-                        // Connect button — idle / connecting / connected
+                        // ✅ Connect / Disconnect button
                         Rectangle{
                             id: connectBtn
-                            width: btPage.width * 0.2
+                            width: btPage.width * 0.22
                             height: parent.parent.height * 0.58
                             radius: height / 3
                             anchors.verticalCenter: parent.verticalCenter
-                            color:{
-                                if (parent.parent.isConnected)  return '#227722'
-                                if (parent.parent.isConnecting) return '#885500'
+
+                            color: {
+                                if (parent.parent.isDisconnecting) return '#664400'
+                                if (parent.parent.isConnected)
+                                    return connectBtnArea.containsMouse ? '#115511' : '#227722'
+                                if (parent.parent.isConnecting)     return '#885500'
                                 return connectBtnArea.containsMouse ? '#aa2211' : '#ff6c55'
                             }
                             Behavior on color{ ColorAnimation{ duration: 200 } }
 
                             Text{
                                 anchors.centerIn: parent
-                                text:{
-                                    if (parent.parent.parent.isConnected)  return qsTr("Connected")
-                                    if (parent.parent.parent.isConnecting) return qsTr("Connecting..")
+                                text: {
+                                    if (parent.parent.parent.isDisconnecting) return qsTr("Disconnecting..")
+                                    if (parent.parent.parent.isConnected)     return qsTr("Disconnect")
+                                    if (parent.parent.parent.isConnecting)    return qsTr("Connecting..")
                                     return qsTr("Connect")
                                 }
-                                font.pixelSize: parent.height * 0.32
+                                font.pixelSize: parent.height * 0.30
                                 color: '#fff5f3'
                                 font.bold: true
                                 font.family: "Arial"
@@ -347,10 +358,17 @@ Rectangle{
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 enabled: !parent.parent.parent.isConnecting
-                                         && !parent.parent.parent.isConnected
-                                onClicked:{
-                                    btPage.connectingAddress = model.address
-                                    BluetoothManager.connectDevice(model.address)
+                                         && !parent.parent.parent.isDisconnecting
+                                onClicked: {
+                                    if (parent.parent.parent.isConnected) {
+                                        // ✅ Disconnect
+                                        btPage.disconnectingAddress = model.address
+                                        BluetoothManager.disconnectDevice(model.address)
+                                    } else {
+                                        // ✅ Connect
+                                        btPage.connectingAddress = model.address
+                                        BluetoothManager.connectDevice(model.address)
+                                    }
                                 }
                             }
                         }
@@ -392,7 +410,7 @@ Rectangle{
         Text{
             id: toastText
             anchors.centerIn: parent
-            font.pixelSize: parent.height * 0.35
+            font.pixelSize: parent.height * 0.28
             color: statusToast.isError ? '#ff8a7a' : '#88ff88'
             font.family: "Arial"
             font.bold: true
@@ -411,7 +429,7 @@ Rectangle{
         toastTimer.restart()
     }
 
-    // Return to Main Page Button
+    // Back Button
     Rectangle{
         width: parent.width / 6.5
         height: parent.height / 15

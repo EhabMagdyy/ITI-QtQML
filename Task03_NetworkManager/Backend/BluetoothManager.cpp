@@ -5,7 +5,7 @@
 #include <QDBusPendingReply>
 #include <QTimer>
 
-// D-Bus custom type registration
+// ─── D-Bus custom type registration ─────────────────────────────────────────
 typedef QMap<QString, QVariantMap>              DBusInterfaceMap;
 typedef QMap<QDBusObjectPath, DBusInterfaceMap> DBusManagedObjects;
 Q_DECLARE_METATYPE(DBusInterfaceMap)
@@ -65,7 +65,7 @@ const QDBusArgument &operator>>(const QDBusArgument &arg, DBusManagedObjects &ma
     return arg;
 }
 
-// BlueZ D-Bus constants
+// ─── BlueZ D-Bus constants ───────────────────────────────────────────────────
 static const QString BZ_SERVICE = "org.bluez";
 static const QString BZ_ADAPTER = "org.bluez.Adapter1";
 static const QString BZ_DEVICE  = "org.bluez.Device1";
@@ -73,7 +73,7 @@ static const QString BZ_OBJ_MGR = "org.freedesktop.DBus.ObjectManager";
 static const QString BZ_PROPS   = "org.freedesktop.DBus.Properties";
 static const QString BZ_ROOT    = "/";
 
-// Helper: get all managed BlueZ objects
+// ── Helper: get all managed BlueZ objects ────────────────────────────────────
 static DBusManagedObjects getManagedObjects()
 {
     qDBusRegisterMetaType<DBusInterfaceMap>();
@@ -89,6 +89,7 @@ static DBusManagedObjects getManagedObjects()
     return result;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 BluetoothManager::BluetoothManager(QObject *parent) : QObject(parent)
 {
     qDBusRegisterMetaType<DBusInterfaceMap>();
@@ -116,12 +117,10 @@ BluetoothManager::BluetoothManager(QObject *parent) : QObject(parent)
         this,
         SLOT(onAdapterPropertiesChanged(QString, QVariantMap, QStringList)));
 
-    // Subscribe to all devices BlueZ already knows about at startup.
-    // This catches devices that were connected before the app launched.
     subscribeToAllKnownDevices();
 }
 
-// Subscribe to every device BlueZ already knows at startup
+// ── Subscribe to every device BlueZ already knows at startup ─────────────────
 void BluetoothManager::subscribeToAllKnownDevices()
 {
     DBusManagedObjects objects = getManagedObjects();
@@ -137,13 +136,12 @@ void BluetoothManager::subscribeToAllKnownDevices()
 
         subscribeToDevice(it.key().path(), address);
 
-        // Immediately emit current connected state so QML is in sync from start
         if (connected)
             emit deviceConnectionChanged(address, true);
     }
 }
 
-// Find the first valid Bluetooth adapter path
+// ── Find the first valid Bluetooth adapter path ───────────────────────────────
 QString BluetoothManager::getAdapterPath()
 {
     for (const QString &path : { QString("/org/bluez/hci0"),
@@ -156,7 +154,7 @@ QString BluetoothManager::getAdapterPath()
     return {};
 }
 
-// Find a device's D-Bus path by MAC address
+// ── Find a device's D-Bus path by MAC address ─────────────────────────────────
 QString BluetoothManager::findDevicePath(const QString &address)
 {
     DBusManagedObjects objects = getManagedObjects();
@@ -170,7 +168,7 @@ QString BluetoothManager::findDevicePath(const QString &address)
     return {};
 }
 
-// Subscribe to a single device's PropertiesChanged signal
+// ── Subscribe to a single device's PropertiesChanged signal ──────────────────
 void BluetoothManager::subscribeToDevice(const QString &path, const QString &address)
 {
     if (m_subscribedPaths.contains(path)) return;
@@ -182,16 +180,12 @@ void BluetoothManager::subscribeToDevice(const QString &path, const QString &add
             this,    &BluetoothManager::deviceConnectionChanged);
 
     QDBusConnection::systemBus().connect(
-        BZ_SERVICE,
-        path,
-        BZ_PROPS,
-        "PropertiesChanged",
+        BZ_SERVICE, path, BZ_PROPS, "PropertiesChanged",
         watcher,
         SLOT(onPropertiesChanged(const QString&, const QVariantMap&, const QStringList&))
     );
 
-    // Read current Connected state immediately and emit it.
-    // Handles the case where device is already connected when we subscribe.
+    // Read and emit current Connected state immediately
     QDBusInterface devIface(BZ_SERVICE, path, BZ_DEVICE,
                             QDBusConnection::systemBus());
     if (devIface.isValid()) {
@@ -200,7 +194,7 @@ void BluetoothManager::subscribeToDevice(const QString &path, const QString &add
     }
 }
 
-// Getters / Setters
+// ── Getters / Setters ─────────────────────────────────────────────────────────
 bool BluetoothManager::bluetoothEnabled() const
 {
     return m_bluetoothEnabled;
@@ -212,17 +206,13 @@ void BluetoothManager::setBluetoothEnabled(bool enabled)
         qWarning() << "BluetoothManager: No adapter to toggle";
         return;
     }
-
-    // Prevents spurious D-Bus calls during QML init
     if (m_bluetoothEnabled == enabled) return;
 
     QDBusInterface propsIface(BZ_SERVICE, m_adapterPath, BZ_PROPS,
                               QDBusConnection::systemBus());
 
     QDBusMessage reply = propsIface.call(
-        "Set",
-        BZ_ADAPTER,
-        "Powered",
+        "Set", BZ_ADAPTER, "Powered",
         QVariant::fromValue(QDBusVariant(enabled))
     );
 
@@ -230,7 +220,7 @@ void BluetoothManager::setBluetoothEnabled(bool enabled)
         qWarning() << "BT Set Powered failed:" << reply.errorMessage();
 }
 
-// Adapter property changed (Powered toggled from system or our call)
+// ── Adapter property changed ──────────────────────────────────────────────────
 void BluetoothManager::onAdapterPropertiesChanged(QString interface,
                                                    QVariantMap changedProps,
                                                    QStringList invalidatedProps)
@@ -243,14 +233,13 @@ void BluetoothManager::onAdapterPropertiesChanged(QString interface,
     }
 }
 
-// Reserved for future live device discovery
 void BluetoothManager::onInterfacesAdded(const QDBusObjectPath &path,
                                           const QVariantMap &interfaces)
 {
     Q_UNUSED(path) Q_UNUSED(interfaces)
 }
 
-// Scan for nearby Bluetooth devices
+// ── Scan for nearby Bluetooth devices ────────────────────────────────────────
 void BluetoothManager::scanDevices()
 {
     if (!m_adapterIface || !m_adapterIface->isValid()) {
@@ -270,7 +259,6 @@ void BluetoothManager::scanDevices()
         return;
     }
 
-    // Stop after 8 seconds and collect results
     QTimer::singleShot(8000, this, [this]() {
         m_adapterIface->call("StopDiscovery");
 
@@ -288,10 +276,7 @@ void BluetoothManager::scanDevices()
 
             if (address.isEmpty()) continue;
 
-            // Format: "Name|Address|1" or "Name|Address|0"
             devices << name + "|" + address + "|" + (connected ? "1" : "0");
-
-            // Subscribe to live connection state changes for this device
             subscribeToDevice(it.key().path(), address);
         }
 
@@ -299,7 +284,7 @@ void BluetoothManager::scanDevices()
     });
 }
 
-// Pair with a device by MAC address
+// ── Pair with a device by MAC address ────────────────────────────────────────
 void BluetoothManager::pairDevice(const QString &address)
 {
     QString path = findDevicePath(address);
@@ -310,7 +295,6 @@ void BluetoothManager::pairDevice(const QString &address)
 
     QDBusInterface devIface(BZ_SERVICE, path, BZ_DEVICE,
                             QDBusConnection::systemBus());
-
     QString name = devIface.property("Name").toString();
 
     if (devIface.property("Paired").toBool()) {
@@ -327,7 +311,7 @@ void BluetoothManager::pairDevice(const QString &address)
     emit pairSuccess(name);
 }
 
-// Connect to a device — async so UI shows "Connecting..." state
+// ── Connect to a device — async so UI shows "Connecting..." state ─────────────
 void BluetoothManager::connectDevice(const QString &address)
 {
     QString path = findDevicePath(address);
@@ -342,7 +326,6 @@ void BluetoothManager::connectDevice(const QString &address)
 
     QString name = devIface->property("Name").toString();
 
-    // Async call — returns immediately so QML shows "Connecting..." state
     QDBusPendingCall call = devIface->asyncCall("Connect");
     QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(call, this);
 
@@ -353,6 +336,36 @@ void BluetoothManager::connectDevice(const QString &address)
             emit connectFailed(reply.error().message());
         else
             emit connectSuccess(name);
+        watcher->deleteLater();
+        devIface->deleteLater();
+    });
+}
+
+// ── Disconnect from a device — async ─────────────────────────────────────────
+void BluetoothManager::disconnectDevice(const QString &address)
+{
+    QString path = findDevicePath(address);
+    if (path.isEmpty()) {
+        emit disconnectFailed("Device not found: " + address);
+        return;
+    }
+
+    QDBusInterface *devIface = new QDBusInterface(
+        BZ_SERVICE, path, BZ_DEVICE,
+        QDBusConnection::systemBus(), this);
+
+    QString name = devIface->property("Name").toString();
+
+    QDBusPendingCall call = devIface->asyncCall("Disconnect");
+    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(call, this);
+
+    connect(watcher, &QDBusPendingCallWatcher::finished,
+            this, [this, watcher, name, devIface](QDBusPendingCallWatcher *) {
+        QDBusPendingReply<> reply = *watcher;
+        if (reply.isError())
+            emit disconnectFailed(reply.error().message());
+        else
+            emit disconnectSuccess(name);
         watcher->deleteLater();
         devIface->deleteLater();
     });

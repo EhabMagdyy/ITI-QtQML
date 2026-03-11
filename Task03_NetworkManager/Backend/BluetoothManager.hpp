@@ -5,7 +5,6 @@
 #include <QDBusObjectPath>
 #include <QDBusPendingCallWatcher>
 
-
 class DeviceWatcher : public QObject {
     Q_OBJECT
 public:
@@ -52,6 +51,7 @@ public:
     Q_INVOKABLE void scanDevices();
     Q_INVOKABLE void pairDevice(const QString &address);
     Q_INVOKABLE void connectDevice(const QString &address);
+    Q_INVOKABLE void disconnectDevice(const QString &address);  // ← add
 
 signals:
     void bluetoothEnabledChanged(bool enabled);
@@ -62,6 +62,8 @@ signals:
     void pairFailed(const QString &reason);
     void connectSuccess(const QString &name);
     void connectFailed(const QString &reason);
+    void disconnectSuccess(const QString &name);                // ← add
+    void disconnectFailed(const QString &reason);               // ← add
     void deviceConnectionChanged(const QString &address, bool connected);
 
 private slots:

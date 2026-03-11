@@ -670,7 +670,7 @@ Rectangle {
         Text {
             id: toastText
             anchors.centerIn: parent
-            font.pixelSize: parent.height * 0.35
+            font.pixelSize: parent.height * 0.3
             color: statusToast.isError ? '#ff8a7a' : '#88ff88'
             font.family: "Arial"
             font.bold: true
