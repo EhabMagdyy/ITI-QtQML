@@ -17,15 +17,20 @@ A **Qt6/QML desktop application** for managing Wi-Fi and Bluetooth connections o
 - 📡 Scan for available networks and display them in a scrollable popup
 - 🔗 Connect to a known network (auto-detects saved profiles — no password re-entry)
 - 🔐 Connect to a new network with SSID + password input
-- 🔒 Connect to hidden networks manually
-- 📶 Real-time connection status feedback via toast notifications
+- 🔒 Connect to hidden networks via manual SSID + password entry (`hidden: true`)
+- ✂️ Scan deduplication — multiple BSSIDs sharing the same SSID are shown as one entry
+- 🚫 No duplicate saved profiles — checks existing profiles before `AddAndActivateConnection`
+- 🔴 **Disconnect** from the current network directly from the scan popup
+- 🟢 Button shows **Connected** (green) for the active network, **Connect** (red) for others
+- 📶 Real-time connection status synced with system via `ActiveConnections` property changes
 
 ### Bluetooth
 - 🔘 Toggle Bluetooth on/off — synced with adapter state in real time
 - 🔍 Scan for nearby devices (8-second discovery window)
 - 🔗 Connect to a discovered device
+- 🔴 **Disconnect** from a connected device
 - 📋 Inline scrollable device list with name and MAC address
-- 🟢 Real-time connection state — button shows **Connecting...** then **Connected** without rescanning
+- 🟢 4-state button: **Connect → Connecting.. → Disconnect → Disconnecting..**
 - 🔄 Syncs with system — if a device connects/disconnects outside the app, the UI updates instantly
 
 ### General
@@ -123,16 +128,17 @@ QML "Scan" button clicked
         ├─► Device.RequestScan()
         ├─► Device.GetAllAccessPoints()
         │     └─► read Ssid property per AP
+        │           └─► QSet<QString> deduplication — skip duplicate SSIDs ✅
         └─► emit scanFinished(QStringList)
               └─► QML populates network popup ListView
 ```
 
-#### Connect to Network
+#### Connect to Network (from scan popup)
 ```
 User selects a network from popup
   └─► WifiManager::connectToSelectedNetwork(ssid)
         ├─► NM.Settings.ListConnections()
-        │     └─► foreach connection: GetSettings() → match Ssid
+        │     └─► foreach connection: GetSettings() → match Ssid (as QByteArray) ✅
         │           ├─► [found]  NM.ActivateConnection() → watchActiveConnection()
         │           │             └─► PropertiesChanged on ActiveConnection path
         │           │                   ├─► State == 2 → emit connectSuccess()
@@ -142,11 +148,36 @@ User selects a network from popup
 
 User enters password → clicks Connect
   └─► WifiManager::connectToNetwork(ssid, password)
-        ├─► Build NMConnectionSettings (a{sa{sv}}) map
-        ├─► NM.AddAndActivateConnection()
-        │     └─► returns (connPath, activeConnPath)
+        ├─► Check existing profiles first (avoids creating duplicate saved connections) ✅
+        │     └─► [found] NM.ActivateConnection() → no new profile created
+        ├─► [not found] Build NMConnectionSettings (a{sa{sv}}) map
+        │     ├─► wirelessSettings["hidden"] = true  ← works for hidden + visible ✅
+        │     └─► NM.AddAndActivateConnection()
         └─► watchActiveConnection(activeConnPath, ssid)
               └─► same state-watching flow as above
+```
+
+#### Disconnect from Network
+```
+User clicks "Disconnect" on connected network in popup
+  └─► WifiManager::disconnectFromNetwork()
+        ├─► NM.ActiveConnections property → find Type == "802-11-wireless"
+        └─► NM.DeactivateConnection(activeConnPath)
+              └─► ActiveConnections changes → onPropertiesChanged()
+                    └─► updateConnectedSsid() → m_connectedSsid = ""
+                          └─► emit connectedSsidChanged("") → QML shows toast
+```
+
+#### Connected SSID Tracking
+```
+App startup / ActiveConnections changes
+  └─► WifiManager::updateConnectedSsid()
+        ├─► NM.ActiveConnections → foreach active connection
+        │     └─► Type == "802-11-wireless" → GetSettings() → read ssid bytes
+        │           └─► m_connectedSsid = ssid → emit connectedSsidChanged()
+        │                 └─► QML: WifiManager.connectedSsid binding
+        │                       └─► scan popup button: green "Connected" / red "Connect"
+        └─► [none found] m_connectedSsid = "" → emit connectedSsidChanged("")
 ```
 
 ---
@@ -174,7 +205,7 @@ BluetoothManager constructor
 ```
 QML Switch toggled (guarded by updatingFromBackend flag)
   └─► BluetoothManager::setBluetoothEnabled(bool)
-        ├─► guard: if m_bluetoothEnabled == enabled → return  (prevents spurious calls)
+        ├─► guard: if m_bluetoothEnabled == enabled → return
         └─► org.freedesktop.DBus.Properties.Set(Adapter1, "Powered", value)
               └─► PropertiesChanged fires on adapter path
                     └─► onAdapterPropertiesChanged()
@@ -195,7 +226,7 @@ QML "Scan" button clicked
               ├─► GetManagedObjects() → foreach Device1
               │     ├─► read Name, Address, Connected
               │     ├─► append "Name|Address|0or1" to list
-              │     └─► subscribeToDevice(path, address)  ← live tracking from here
+              │     └─► subscribeToDevice(path, address)
               └─► emit scanFinished(QStringList)
                     └─► QML: deviceListModel.clear() + append each device
                               + populate connectedAddresses[] from "1" entries
@@ -204,7 +235,7 @@ QML "Scan" button clicked
 #### Connect to Device
 ```
 QML "Connect" button clicked
-  └─► btPage.connectingAddress = address  ← delegate shows "Connecting..." immediately
+  └─► btPage.connectingAddress = address  ← delegate shows "Connecting.." immediately
   └─► BluetoothManager::connectDevice(address)
         ├─► findDevicePath(address) via GetManagedObjects()
         ├─► devIface.asyncCall("Connect")  ← non-blocking, UI stays responsive
@@ -212,10 +243,27 @@ QML "Connect" button clicked
               ├─► [success] emit connectSuccess(name)
               │     └─► QML: connectedAddresses.slice() + push + reassign
               │               connectingAddress = ""
-              │               delegate shows "Connected" (green)
+              │               delegate shows "Disconnect" (green)
               └─► [failure] emit connectFailed(reason)
                     └─► QML: connectingAddress = ""
                               delegate reverts to "Connect" (red)
+```
+
+#### Disconnect from Device
+```
+QML "Disconnect" button clicked
+  └─► btPage.disconnectingAddress = address  ← delegate shows "Disconnecting.." immediately
+  └─► BluetoothManager::disconnectDevice(address)
+        ├─► findDevicePath(address) via GetManagedObjects()
+        ├─► devIface.asyncCall("Disconnect")  ← non-blocking ✅
+        └─► QDBusPendingCallWatcher::finished
+              ├─► [success] emit disconnectSuccess(name)
+              │     └─► QML: disconnectingAddress = ""
+              │               toast "Disconnected from <name>"
+              │               DeviceWatcher fires → connectedAddresses updated
+              └─► [failure] emit disconnectFailed(reason)
+                    └─► QML: disconnectingAddress = ""
+                              shows error toast
 ```
 
 #### Real-Time Connection Sync
@@ -228,6 +276,7 @@ Device connects/disconnects from outside the app (e.g. system settings)
                           └─► QML Connections.onDeviceConnectionChanged()
                                 ├─► connectedAddresses.slice() → modify → reassign
                                 │   (slice() forces new array reference = QML re-evaluates)
+                                ├─► clears connectingAddress / disconnectingAddress if match
                                 └─► all delegates re-check indexOf(address)
                                       → button color + text update instantly
 ```
@@ -239,17 +288,19 @@ Device connects/disconnects from outside the app (e.g. system settings)
 ### Wi-Fi — NetworkManager
 | Interface | Usage |
 |---|---|
-| `org.freedesktop.NetworkManager` | Toggle `WirelessEnabled`, get devices |
+| `org.freedesktop.NetworkManager` | Toggle `WirelessEnabled`, get devices, `ActivateConnection`, `DeactivateConnection` |
 | `org.freedesktop.NetworkManager.Device.Wireless` | `RequestScan`, `GetAllAccessPoints` |
 | `org.freedesktop.NetworkManager.AccessPoint` | Read `Ssid` property |
 | `org.freedesktop.NetworkManager.Settings` | `ListConnections` for saved profiles |
+| `org.freedesktop.NetworkManager.Settings.Connection` | `GetSettings` to match SSID |
+| `org.freedesktop.NetworkManager.Connection.Active` | Read `Type`, `Connection` for active connection tracking |
 | `org.freedesktop.DBus.Properties` | `PropertiesChanged` signal for real-time sync |
 
 ### Bluetooth — BlueZ
 | Interface | Usage |
 |---|---|
 | `org.bluez.Adapter1` | Toggle `Powered`, `StartDiscovery`, `StopDiscovery` |
-| `org.bluez.Device1` | `Connect`, read `Name` / `Address` / `Connected` |
+| `org.bluez.Device1` | `Connect`, `Disconnect`, read `Name` / `Address` / `Connected` |
 | `org.freedesktop.DBus.ObjectManager` | `GetManagedObjects` for device enumeration |
 | `org.freedesktop.DBus.Properties` | `PropertiesChanged` for real-time connection sync |
 
@@ -327,11 +378,23 @@ D-Bus gives **push notifications** via signals — the UI updates the moment the
 ### Why separate `connectToSelectedNetwork` from `connectToNetwork`?
 `connectToSelectedNetwork` checks for saved profiles and calls `ActivateConnection` — no password needed. `connectToNetwork` handles new networks only, calling `AddAndActivateConnection` with full credentials. This mirrors how a real network settings panel behaves.
 
+### Why check for existing profiles inside `connectToNetwork`?
+Calling `AddAndActivateConnection` unconditionally creates a new saved profile every time — resulting in duplicate entries in NetworkManager (e.g. "2001", "2001 1", "2001 2"). Checking `ListConnections` first and calling `ActivateConnection` if a match exists prevents this entirely.
+
+### Why `hidden: true` in wireless settings?
+Without this flag, NetworkManager treats the connection as a visible network and won't send directed probe requests for that SSID. Setting `hidden: true` forces directed probing, which is required for hidden networks. It has no negative effect on visible networks.
+
+### Why compare SSID as `QByteArray` not `QString`?
+NetworkManager stores SSIDs as raw bytes (`ay` D-Bus type), not strings. Calling `.toString()` on the variant may fail or produce garbage for non-ASCII SSIDs. Always use `.toByteArray()` then `QString::fromUtf8()`.
+
+### Why `connectedSsid` as a `Q_PROPERTY`?
+Exposing the connected SSID as a property lets QML delegates bind to it directly with `WifiManager.connectedSsid === model.name` — no extra signal handlers needed. The scan popup button color and text update automatically whenever the property changes.
+
 ### Why `NMConnectionSettings` (`QMap<QString, QVariantMap>`) instead of `QVariantMap`?
 NetworkManager's `AddAndActivateConnection` expects D-Bus type `a{sa{sv}}`. A plain `QVariantMap` marshals to `a{sv}` which causes a type mismatch error. The custom typedef with `qDBusRegisterMetaType` ensures correct marshalling.
 
-### Why async `Connect()` for Bluetooth?
-BlueZ's `Connect()` is blocking — it waits until connected or failed. Using `asyncCall` + `QDBusPendingCallWatcher` lets the call return immediately so QML can show the **"Connecting..."** state while waiting, giving proper visual feedback.
+### Why async `Connect()` and `Disconnect()` for Bluetooth?
+BlueZ's `Connect()` and `Disconnect()` are blocking — they wait until the operation completes or fails. Using `asyncCall` + `QDBusPendingCallWatcher` lets the call return immediately so QML can show **"Connecting..."** / **"Disconnecting..."** states while waiting, giving proper visual feedback.
 
 ### Why `DeviceWatcher` helper class instead of a shared slot?
 `QDBusConnection::connect()` only accepts `const char*` slot strings — it does not support lambdas. A small `DeviceWatcher` object is created per device, capturing its path and address, with a proper `Q_SLOT` that forwards to `BluetoothManager::deviceConnectionChanged`.
@@ -341,6 +404,9 @@ QML's property binding system compares object references. Calling `.push()` or `
 
 ### Why `Component.onCompleted` for the Bluetooth Switch instead of a direct binding?
 A direct `checked: BluetoothManager.bluetoothEnabled` binding fires `onCheckedChanged` during component initialization before `updatingFromBackend` is set, sending a spurious `setBluetoothEnabled(false)` D-Bus call. Using `Component.onCompleted` sets the initial state silently after the component is fully constructed.
+
+### Why deduplicate scan results with `QSet`?
+`GetAllAccessPoints` returns one entry per BSSID (physical radio), not per SSID. A mesh network or office with many access points can return 5–10 entries for the same network name. A `QSet<QString>` seen tracker ensures each SSID appears exactly once in the list.
 
 ---
 
@@ -356,6 +422,7 @@ A direct `checked: BluetoothManager.bluetoothEnabled` binding fires `onCheckedCh
 | `passwordRequired(QString)` | New network selected | Opens password popup |
 | `connectSuccess(QString)` | Connection confirmed | Shows success toast |
 | `connectFailed(QString)` | Connection failed | Shows error toast |
+| `connectedSsidChanged(QString)` | Active WiFi connection changed | Updates button states in popup; toast on disconnect |
 
 ### BluetoothManager
 | Signal | When emitted | QML handler |
@@ -366,6 +433,8 @@ A direct `checked: BluetoothManager.bluetoothEnabled` binding fires `onCheckedCh
 | `scanFailed(QString)` | Discovery error | Shows error toast |
 | `connectSuccess(QString)` | Connected | Updates connectedAddresses + toast |
 | `connectFailed(QString)` | Connection failed | Clears connectingAddress + toast |
+| `disconnectSuccess(QString)` | Disconnected | Clears disconnectingAddress + toast |
+| `disconnectFailed(QString)` | Disconnect error | Clears disconnectingAddress + error toast |
 | `deviceConnectionChanged(QString, bool)` | System state changed | Updates connectedAddresses in real time |
 
 ---
