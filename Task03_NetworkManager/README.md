@@ -6,7 +6,7 @@ A **Qt6/QML desktop application** for managing Wi-Fi and Bluetooth connections o
 
 ## 📸 Demo
 
-> https://github.com/user-attachments/assets/662210c1-5778-480c-a917-230aff0b5ce9
+> [https://github.com/user-attachments/assets/662210c1-5778-480c-a917-230aff0b5ce9](https://github.com/user-attachments/assets/af20b455-88e2-4f0f-bd7c-e46458a002f3)
 
 ---
 
