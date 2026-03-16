@@ -12,6 +12,8 @@ ApplicationWindow {
     title: qsTr("Weather")
     flags: Qt.FramelessWindowHint | Qt.Window
 
+    property int currentHour: 2
+
     // app background image
     Image {
         id: backgroundImage
@@ -109,7 +111,7 @@ ApplicationWindow {
         // ===================================== Search field =====================================
         TextField {
             id: cityInput
-            width: mainWindow.width * 0.22
+            width: mainWindow.width * 0.3
             height: mainWindow.height * 0.055
             placeholderText: "🔍 Enter city name..."
             anchors.horizontalCenter: parent.horizontalCenter
@@ -151,11 +153,13 @@ ApplicationWindow {
             opacity: 0.8
             radius: mainWindow.height * 0.025
             anchors.horizontalCenter: parent.horizontalCenter
+            border.color: "#ffffff"
+            border.width: 3
 
             // Main weather info layout
             Row {
                 anchors.centerIn: parent
-                spacing: mainWindow.width * 0.03
+                spacing: mainWindow.width * 0.015
 
                 // Weather emoji
                 Text {
@@ -198,7 +202,7 @@ ApplicationWindow {
 
                 // Spacer
                 Item {
-                    width: mainWindow.width * 0.28
+                    width: mainWindow.width * 0.2
                     height: 1
                 }
 
@@ -211,7 +215,7 @@ ApplicationWindow {
                         id: cityName
                         text: "El Mazarita, Egypt"
                         color: "white"
-                        font.pointSize: mainWindow.height * 0.028
+                        font.pointSize: mainWindow.height * 0.026
                         font.family: "Arial"
                         font.bold: true
                     }
@@ -222,6 +226,50 @@ ApplicationWindow {
                         font.pointSize: mainWindow.height * 0.02
                         font.family: "Arial"
                     }
+                }
+
+                // line Separator
+                Rectangle {
+                    width: 1
+                    height: mainWindow.height * 0.09
+                    color: "#ffffff"
+                    opacity: 0.3
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                // Population
+                Column {
+                    spacing: mainWindow.height * 0.014
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Text {
+                        id: populationLabel
+                        text: "Population"
+                        color: "white"
+                        font.pointSize: mainWindow.height * 0.02
+                        font.family: "Arial"
+                        font.bold: true
+                    }
+                    Text {
+                        id: populationValue
+                        text: "137,844"
+                        color: '#ffffff'
+                        font.pointSize: mainWindow.height * 0.018
+                        font.family: "Arial"
+                    }
+                }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                onEntered: {
+                    mainInfoContainer.scale = 1.01
+                    mainInfoContainer.opacity = 1.0
+                }
+                onExited: {
+                    mainInfoContainer.scale = 1.0
+                    mainInfoContainer.opacity = 0.8
                 }
             }
         }
@@ -236,6 +284,8 @@ ApplicationWindow {
             radius: mainWindow.height * 0.025
             anchors.horizontalCenter: parent.horizontalCenter
             clip: true
+            border.color: "#ffffff"
+            border.width: 1
 
             Flickable {
                 id: hourlyFlickable
@@ -260,31 +310,55 @@ ApplicationWindow {
                             required property string temp
                             required property int    index
 
+                            property bool isCurrent: index === mainWindow.currentHour
+
                             width: mainWindow.width * 0.08
                             height: hourlyRow.height
-                            color: '#ffffff'
+                            color: hourlyDelegate.isCurrent ? '#12495f' : '#ffffff'
                             radius: mainWindow.height * 0.01
-                            opacity: 0.5
+                            opacity: hourlyDelegate.isCurrent ? 1.0 : 0.7
+                            border.color: hourlyDelegate.isCurrent ? '#4fc3f7' : '#000000'
+                            border.width: 1
 
                             Column {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 topPadding: parent.height * 0.1
-                                spacing: mainWindow.height * 0.01
+                                spacing: mainWindow.height * 0.005
 
                                 Text {
                                     text: hourlyDelegate.time
-                                    color: "white"
-                                    font.pointSize: mainWindow.height * 0.025
+                                    color: hourlyDelegate.isCurrent ? '#ffffff' : '#001224'
+                                    font.pointSize: mainWindow.height * 0.02
                                     font.family: "Arial"
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                }
+                                Rectangle {
+                                    width: parent.width * 0.8
+                                    height: 1
+                                    color: hourlyDelegate.isCurrent ? '#4fc3f7' : '#12495f'
+                                    radius: width / 2
                                     anchors.horizontalCenter: parent.horizontalCenter
                                 }
                                 Text {
                                     text: hourlyDelegate.temp
-                                    color: "white"
+                                    color: hourlyDelegate.isCurrent ? '#ffffff' : '#001224'
                                     font.pointSize: mainWindow.height * 0.035
                                     font.bold: true
                                     font.family: "Arial"
                                     anchors.horizontalCenter: parent.horizontalCenter
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onEntered: {
+                                    hourlyDelegate.scale = 1.01
+                                    hourlyDelegate.opacity = 1.0
+                                }
+                                onExited: {
+                                    hourlyDelegate.scale = 1.0
+                                    hourlyDelegate.opacity = 0.8
                                 }
                             }
                         }
@@ -296,14 +370,14 @@ ApplicationWindow {
         // ===================================== Weekly forecast + weather details =====================================
         Row {
             id: weatherDetailsRow
-            spacing: mainWindow.width * 0.05
+            spacing: mainWindow.width * 0.024
             anchors.horizontalCenter: parent.horizontalCenter
 
             // ===================================== Weekly forecast =====================================
             Rectangle {
                 id: weeklyContainer
                 width: mainWindow.width * 0.4
-                height: mainWindow.height * 0.45
+                height: mainWindow.height * 0.43
                 color: '#12495f'
                 opacity: 0.8
                 radius: mainWindow.height * 0.025
@@ -319,24 +393,24 @@ ApplicationWindow {
 
                         Text {
                             text: "Day"
-                            color: "#aaaaaa"
+                            color: "#b9b9b9"
                             font.pointSize: mainWindow.height * 0.018
                             font.family: "Arial"
                             font.bold: true
-                            width: parent.width * 0.25
+                            width: parent.width * 0.42
                         }
                         Text {
                             text: "UV"
-                            color: "#aaaaaa"
+                            color: '#b9b9b9'
                             font.pointSize: mainWindow.height * 0.018
                             font.family: "Arial"
                             font.bold: true
-                            width: parent.width * 0.3
+                            width: parent.width * 0.08
                             horizontalAlignment: Text.AlignHCenter
                         }
                         Text {
                             text: "Max / Min"
-                            color: "#aaaaaa"
+                            color: "#b9b9b9"
                             font.pointSize: mainWindow.height * 0.018
                             font.family: "Arial"
                             font.bold: true
@@ -372,7 +446,7 @@ ApplicationWindow {
                                 font.pointSize: mainWindow.height * 0.022
                                 font.family: "Arial"
                                 font.bold: true
-                                width: parent.width * 0.25
+                                width: parent.width * 0.44
                             }
                             Text {
                                 text: {
@@ -394,8 +468,8 @@ ApplicationWindow {
                                 font.pointSize: mainWindow.height * 0.020
                                 font.family: "Arial"
                                 font.bold: true
-                                width: parent.width * 0.3
-                                horizontalAlignment: Text.AlignHCenter
+                                width: parent.width * 0.1
+                                horizontalAlignment: Text.AlignLeft
                             }
                             Text {
                                 text: dailyRow.maxTemp + " / " + dailyRow.minTemp
@@ -408,13 +482,34 @@ ApplicationWindow {
                         }
                     }
                 }
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onEntered: {
+                        weeklyContainer.scale = 1.05
+                        weeklyContainer.opacity = 1.0
+                    }
+                    onExited: {
+                        weeklyContainer.scale = 1.0
+                        weeklyContainer.opacity = 0.8
+                    }
+                }
+            }
+
+            // Separator
+            Rectangle {
+                width: 1
+                height: weeklyContainer.height
+                color: "#ffffff"
+                opacity: 0.4
             }
 
             // ===================================== Weather details grid =====================================
             Grid {
                 columns: 2
                 width: mainWindow.width * 0.35
-                height: mainWindow.height * 0.45
+                height: mainWindow.height * 0.43
                 rowSpacing: mainWindow.height * 0.02
                 columnSpacing: mainWindow.width * 0.02
 
@@ -425,37 +520,49 @@ ApplicationWindow {
                         id: infoDelegate
                         required property var modelData
                         width: (mainWindow.width * 0.35 - mainWindow.width * 0.02) / 2
-                        height: (mainWindow.height * 0.45 - mainWindow.height * 0.02) / 2
+                        height: (mainWindow.height * 0.43 - mainWindow.height * 0.02) / 2
                         color: '#12495f'
                         opacity: 0.8
                         radius: mainWindow.height * 0.015
 
                         Column {
                             anchors.centerIn: parent
-                            spacing: mainWindow.height * 0.008
+                            spacing: mainWindow.height * 0.009
 
                             // Emoji
                             Text {
                                 text: infoDelegate.modelData.emoji
-                                font.pointSize: mainWindow.height * 0.030
+                                font.pointSize: mainWindow.height * 0.035
                                 anchors.horizontalCenter: parent.horizontalCenter
                             }
                             // Label
                             Text {
                                 text: infoDelegate.modelData.label
-                                color: "#aaaaaa"
-                                font.pointSize: mainWindow.height * 0.016
+                                color: '#ffffff'
+                                font.pointSize: mainWindow.height * 0.02
                                 font.family: "Arial"
                                 anchors.horizontalCenter: parent.horizontalCenter
                             }
                             // Value
                             Text {
                                 text: infoDelegate.modelData.value
-                                color: "white"
-                                font.pointSize: mainWindow.height * 0.022
+                                color: '#e0e0e0'
+                                font.pointSize: mainWindow.height * 0.028
                                 font.family: "Arial"
                                 font.bold: true
                                 anchors.horizontalCenter: parent.horizontalCenter
+                            }
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onEntered: {
+                                infoDelegate.scale = 1.05
+                                infoDelegate.opacity = 1.0
+                            }
+                            onExited: {
+                                infoDelegate.scale = 1.0
+                                infoDelegate.opacity = 0.8
                             }
                         }
                     }
@@ -474,6 +581,8 @@ ApplicationWindow {
             temperature.text     = Math.round(current.temperature_2m) + "°C"
             feelsLike.text       = "Feels like: " + Math.round(current.apparent_temperature) + "°C"
             weatherEmoji.text    = mainWindow.weatherEmoji(current.weather_code, current.is_day)
+            populationValue.text = location.population.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+            mainWindow.currentHour = parseInt(current.time.split("T")[1].split(":")[0])
 
             // Update description from weather code
             var code = current.weather_code
@@ -518,11 +627,11 @@ ApplicationWindow {
         }
 
         onCityNotFound: function(city) {
-            cityName.text           = "⚠️ \"" + city + "\" not found"
+            cityInput.text           = "⚠️ \"" + city + "\" not found"
         }
 
         onNetworkError: function(message) {
-            cityName.text           = "⚠️ Network error"
+            cityInput.text           = "⚠️ Network error"
         }
     }
 }
