@@ -6,7 +6,7 @@ A modern, responsive desktop weather application built with **Qt 6** and **QML**
 
 ## Preview
 
-> https://github.com/EhabMagdyy/ITI-QtQML/new/main/Task04_Weather
+> [Video of the app](https://drive.google.com/file/d/1vPNCPcpHF7J4_vA89kN_IO6Z7uxnAVNy/view?usp=drive_link)
 
 ---
 
