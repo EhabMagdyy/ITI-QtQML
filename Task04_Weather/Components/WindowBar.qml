@@ -8,7 +8,7 @@ Rectangle {
     anchors.top: parent.top
     anchors.horizontalCenter: parent.horizontalCenter
     color: '#ffffff'
-    opacity: 0.5
+    opacity: 0.6
     anchors.topMargin: 10
     anchors.rightMargin: 10
     anchors.leftMargin: 10
@@ -19,9 +19,14 @@ Rectangle {
 
     required property var window
 
+    Behavior on opacity {NumberAnimation {duration: 120}}
+
     MouseArea {
         anchors.fill: parent
         onPressed: titleBar.window.startSystemMove()
+        hoverEnabled: true
+        onEntered: titleBar.opacity = 0.8
+        onExited: titleBar.opacity = 0.6
     }
 
     Text {
@@ -43,6 +48,9 @@ Rectangle {
         MouseArea {
             anchors.fill: parent
             onClicked: titleBar.window.showMinimized()
+            hoverEnabled: true
+            onEntered: parent.scale = 1.1
+            onExited: parent.scale = 1.0
         }
     }
 
@@ -62,6 +70,9 @@ Rectangle {
                 else
                     titleBar.window.showMaximized()
             }
+            hoverEnabled: true
+            onEntered: parent.scale = 1.1
+            onExited: parent.scale = 1.0
         }
     }
 
@@ -76,6 +87,9 @@ Rectangle {
         MouseArea {
             anchors.fill: parent
             onClicked: titleBar.window.close()
+            hoverEnabled: true
+            onEntered: parent.scale = 1.1
+            onExited: parent.scale = 1.0
         }
     }
 }

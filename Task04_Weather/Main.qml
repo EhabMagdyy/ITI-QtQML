@@ -90,8 +90,8 @@ ApplicationWindow {
 
     ListModel {
         id: dailyWeatherModel
-        ListElement { day: "Sunday";    uvIndex: 2.1; maxTemp: "26°C"; minTemp: "15°C" }
-        ListElement { day: "Monday";    uvIndex: 2.5; maxTemp: "27°C"; minTemp: "17°C" }
+        ListElement { day: "Today";    uvIndex: 2.1; maxTemp: "26°C"; minTemp: "15°C" }
+        ListElement { day: "Tomorrow";  uvIndex: 2.5; maxTemp: "27°C"; minTemp: "17°C" }
         ListElement { day: "Tuesday";   uvIndex: 4.0; maxTemp: "28°C"; minTemp: "17°C" }
         ListElement { day: "Wednesday"; uvIndex: 4.6; maxTemp: "27°C"; minTemp: "17°C" }
         ListElement { day: "Thursday";  uvIndex: 5.9; maxTemp: "29°C"; minTemp: "18°C" }
@@ -101,12 +101,52 @@ ApplicationWindow {
 
     // ===================================== Main Layout =====================================
 
+    // Refresh weather data button
+    Rectangle {
+        id: refreshBtn
+        width: mainWindow.height * 0.065
+        height: mainWindow.height * 0.065
+        color: "#1a1a2e"
+        anchors {
+            left: parent.left
+            leftMargin: mainWindow.width * 0.045
+            top: titleBar.bottom
+            topMargin: mainWindow.height * 0.028
+        }
+        radius: width / 2
+        border.color: "#ffffff"
+        border.width: 1
+        opacity: 0.8
+
+        Behavior on scale { NumberAnimation{ duration: 120 }}
+        Behavior on opacity { NumberAnimation{ duration: 120 }}
+
+        Text {
+            anchors.centerIn: parent
+            text: "↻"
+            color: "#ffffff"
+            font.pointSize: mainWindow.height * 0.036
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            onEntered: refreshBtn.opacity = 1.0
+            onExited: refreshBtn.opacity = 0.8
+            onPressed: refreshBtn.scale   = 0.88
+            onReleased: {
+                refreshBtn.scale = 1.0
+                weatherAPI.fetch(cityInput.text)
+            }
+        }
+    }
+
     Column {
         width: parent.width
         anchors.top: titleBar.bottom
         anchors.topMargin: mainWindow.height * 0.028
         anchors.horizontalCenter: parent.horizontalCenter
-        spacing: mainWindow.height * 0.03
+        spacing: mainWindow.height * 0.028
 
         // ===================================== Search field =====================================
         TextField {
@@ -130,13 +170,21 @@ ApplicationWindow {
                 border.width: cityInput.activeFocus ? 2 : 1
                 layer.enabled: cityInput.activeFocus
                 layer.effect: null
-                Behavior on border.color { ColorAnimation { duration: 200 } }
-                Behavior on border.width { NumberAnimation { duration: 200 } }
+            }
+
+            Behavior on scale { NumberAnimation { duration: 120 } }
+
+            onHoveredChanged: {
+                if (hovered)
+                    scale = 1.05
+                else
+                    scale = 1.0
             }
 
             onActiveFocusChanged: {
-                if (activeFocus && text === "")
+                if (activeFocus && text === "" || text.startsWith("⚠️")){
                     placeholderText = ""
+                }
                 else if (!activeFocus && text === "")
                     placeholderText = "🔍  Enter city name..."
             }
@@ -260,6 +308,9 @@ ApplicationWindow {
                 }
             }
 
+            Behavior on scale { NumberAnimation{ duration: 120 }}
+            Behavior on opacity { NumberAnimation{ duration: 120 }}
+
             MouseArea {
                 anchors.fill: parent
                 hoverEnabled: true
@@ -349,16 +400,21 @@ ApplicationWindow {
                                 }
                             }
 
+                            Behavior on scale { NumberAnimation{ duration: 120 }}
+                            Behavior on opacity { NumberAnimation{ duration: 120 }}
+
                             MouseArea {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 onEntered: {
                                     hourlyDelegate.scale = 1.01
                                     hourlyDelegate.opacity = 1.0
+                                    hourlyDelegate.border.width = 2
                                 }
                                 onExited: {
                                     hourlyDelegate.scale = 1.0
                                     hourlyDelegate.opacity = 0.8
+                                    hourlyDelegate.border.width = hourlyDelegate.isCurrent ? 1 : 0
                                 }
                             }
                         }
@@ -483,6 +539,9 @@ ApplicationWindow {
                     }
                 }
 
+                Behavior on scale { NumberAnimation{ duration: 120 }}
+                Behavior on opacity { NumberAnimation{ duration: 120 }}
+
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: true
@@ -553,6 +612,10 @@ ApplicationWindow {
                                 anchors.horizontalCenter: parent.horizontalCenter
                             }
                         }
+
+                        Behavior on scale { NumberAnimation{ duration: 120 }}
+                        Behavior on opacity { NumberAnimation{ duration: 120 }}
+
                         MouseArea {
                             anchors.fill: parent
                             hoverEnabled: true
@@ -627,7 +690,7 @@ ApplicationWindow {
         }
 
         onCityNotFound: function(city) {
-            cityInput.text           = "⚠️ \"" + city + "\" not found"
+            cityInput.text           = "⚠️ City Not found!"
         }
 
         onNetworkError: function(message) {
