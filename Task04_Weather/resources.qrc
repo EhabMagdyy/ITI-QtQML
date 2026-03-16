@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/weatherbackground.jpg</file>
+        <file>Components/WindowBar.qml</file>
+        <file>Components/WindowResize.qml</file>
+    </qresource>
+</RCC>
