@@ -4,6 +4,9 @@ This guide documents the full steps to cross-compile a Qt6 QML project that uses
 
 ---
 
+## Running app on RPi3b+ via vncviewer
+<img width="1917" height="1071" alt="Image" src="https://github.com/user-attachments/assets/86c9760a-e0f5-4a14-b49b-4b650c151e77" />
+
 ## Project Overview
 
 | Item | Detail |
