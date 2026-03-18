@@ -6,6 +6,9 @@ This guide documents the full steps to cross-compile a Qt6 QML project that uses
 
 ## Running app on RPi3b+ via vncviewer
 <img width="1917" height="1071" alt="Image" src="https://github.com/user-attachments/assets/86c9760a-e0f5-4a14-b49b-4b650c151e77" />
+[▶ Demo Video](https://drive.google.com/file/d/1sWMbR6WU0m-gKj5SUl91c2s_WoV7QGm9/view?usp=drive_link)
+
+---
 
 ## Project Overview
 
@@ -207,6 +210,188 @@ The app controls **GPIO17 (physical pin 11)** via `libgpiod` v2.
 ```
 RPi Pin 11 (GPIO17) ─ 220Ω ─ LED (+)
 RPi Pin 9  (GND)    ──────── LED (-)
+```
+
+---
+ 
+## Code Structure & Architecture
+ 
+### File Overview
+ 
+```
+Task05_RPiControlLED/
+├── main.cpp              # App entry point — bridges C++ and QML
+├── Main.qml              # UI — buttons that call C++ slots
+└── LedControl/
+    ├── led.hpp           # LedController class declaration
+    └── led.cpp           # GPIO control via libgpiod v2
+```
+ 
+---
+ 
+### How QML Talks to C++ — The Bridge
+ 
+The connection between the QML UI and the C++ GPIO code is made through Qt's **context property** mechanism in `main.cpp`:
+ 
+```cpp
+// main.cpp
+LedController led;
+engine.rootContext()->setContextProperty("ledController", &led);
+```
+ 
+This line registers the `LedController` C++ object under the name `"ledController"` and makes it available as a global object inside every QML file loaded by the engine. No import is needed in QML — the object is simply available by name.
+ 
+```
+main.cpp
+  │
+  ├── creates QGuiApplication
+  ├── creates QQmlApplicationEngine
+  ├── creates LedController instance  ←── owns the GPIO chip/line
+  ├── registers it as "ledController" in QML context
+  └── loads Main.qml
+            │
+            └── calls ledController.turnOn()
+                        ledController.turnOff()
+                        ledController.toggle()
+```
+ 
+---
+ 
+### LedController — `led.hpp`
+ 
+```cpp
+class LedController : public QObject
+{
+    Q_OBJECT
+public:
+    explicit LedController(QObject *parent = nullptr);
+    ~LedController();
+ 
+public slots:
+    void turnOn();
+    void turnOff();
+    void toggle();
+ 
+private:
+    bool m_state = false;
+    int  m_gpioFd = -1;
+};
+```
+ 
+Key points:
+ 
+- Inherits `QObject` — required for any class that interacts with the Qt meta-object system (signals, slots, properties).
+- `Q_OBJECT` macro — enables the Qt meta-object features (moc processes this at build time).
+- `public slots` — marks `turnOn()`, `turnOff()`, `toggle()` as **slots**, which means QML can call them directly on the object. Without `slots`, QML cannot invoke these methods.
+ 
+---
+ 
+### LedController — `led.cpp` (libgpiod v2 API)
+ 
+The constructor opens the GPIO chip and requests line 17 as an output:
+ 
+```cpp
+LedController::LedController(QObject *parent) : QObject(parent)
+{
+    chip = gpiod_chip_open("/dev/gpiochip0");      // open the GPIO chip
+ 
+    gpiod_request_config *req_cfg = gpiod_request_config_new();
+    gpiod_request_config_set_consumer(req_cfg, "led");
+ 
+    gpiod_line_config  *line_cfg = gpiod_line_config_new();
+    gpiod_line_settings *settings = gpiod_line_settings_new();
+ 
+    gpiod_line_settings_set_direction(settings, GPIOD_LINE_DIRECTION_OUTPUT);
+    gpiod_line_settings_set_output_value(settings, GPIOD_LINE_VALUE_INACTIVE);
+ 
+    // Attach the settings to GPIO line 17
+    gpiod_line_config_add_line_settings(line_cfg, (const unsigned int[]){17}, 1, settings);
+ 
+    request = gpiod_chip_request_lines(chip, req_cfg, line_cfg);  // claim the line
+ 
+    // Free config objects (request remains active)
+    gpiod_line_settings_free(settings);
+    gpiod_line_config_free(line_cfg);
+    gpiod_request_config_free(req_cfg);
+}
+```
+ 
+The slots write the GPIO value:
+ 
+```cpp
+void LedController::turnOn() {
+    m_state = true;
+    gpiod_line_request_set_value(request, 17, GPIOD_LINE_VALUE_ACTIVE);
+}
+ 
+void LedController::turnOff() {
+    m_state = false;
+    gpiod_line_request_set_value(request, 17, GPIOD_LINE_VALUE_INACTIVE);
+}
+ 
+void LedController::toggle() {
+    m_state ? turnOff() : turnOn();
+}
+```
+ 
+The destructor releases the GPIO resources cleanly:
+ 
+```cpp
+LedController::~LedController() {
+    if (request) gpiod_line_request_release(request);
+    if (chip)    gpiod_chip_close(chip);
+}
+```
+ 
+---
+ 
+### Main.qml — The UI
+ 
+The QML file creates a window with three buttons. Each button's `onClicked` handler calls the corresponding slot on `ledController`:
+ 
+```qml
+Button {
+    text: "Turn ON"
+    onClicked: {
+        ledController.turnOn()   // calls LedController::turnOn() in C++
+    }
+}
+ 
+Button {
+    text: "Turn OFF"
+    onClicked: {
+        ledController.turnOff()  // calls LedController::turnOff() in C++
+    }
+}
+ 
+Button {
+    text: "Toggle"
+    onClicked: {
+        ledController.toggle()   // calls LedController::toggle() in C++
+    }
+}
+```
+ 
+`ledController` is available here because `main.cpp` registered it with `setContextProperty("ledController", &led)`.
+ 
+---
+ 
+### Full Data Flow
+ 
+```
+User clicks button in QML
+        │
+        ▼
+onClicked: ledController.turnOn()
+        │
+        ▼  (Qt meta-object system invokes the slot)
+LedController::turnOn()   [C++]
+        │
+        ▼
+gpiod_line_request_set_value(request, 17, GPIOD_LINE_VALUE_ACTIVE)
+        │
+        ▼
+GPIO17 goes HIGH  →  LED turns ON
 ```
 
 ---
