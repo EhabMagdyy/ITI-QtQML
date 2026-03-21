@@ -19,9 +19,12 @@ qt_add_qml_module(appTask06_MediaPlayer
     VERSION 1.0
     QML_FILES
         Main.qml
-        Components/MediaCard.qml
-        Components/WindowBar.qml
-        Components/WindowResize.qml
+        components/MediaCard.qml
+        components/WindowBar.qml
+        components/WindowResize.qml
+        pages/Radio.qml
+        pages/Audio.qml
+        pages/Video.qml
     RESOURCES
         resources.qrc
 )
