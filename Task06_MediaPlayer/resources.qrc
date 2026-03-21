@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/">
+        <file>Components/WindowResize.qml</file>
+        <file>Components/WindowBar.qml</file>
+        <file>Components/MediaCard.qml</file>
+        <file>icons/radio.png</file>
+        <file>icons/video.png</file>
+        <file>icons/audio.png</file>
+        <file>pages/radio.qml</file>
+    </qresource>
+</RCC>
