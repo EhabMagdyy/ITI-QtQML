@@ -449,58 +449,56 @@ Rectangle {
             border.color: '#00ffaa33'
             border.width: 1
 
-            Row {
-                anchors.centerIn: parent
-                anchors.leftMargin: parent.width / 30
-                anchors.rightMargin: parent.width / 30
-                spacing: parent.width / 50
+            // Mute
+            ControlBtn {
+                id: volumeBtn
+                property bool muted: false
+                icon: audioOut.muted ? "🔇" : volumeSlider.value < 0.5 ? "🔉" : "🔊"
+                onClicked: audioOut.muted = !audioOut.muted
                 anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.leftMargin: audioController.width / 20
+            }
 
-                // Mute
-                ControlBtn {
-                    id: volumeBtn
-                    property bool muted: false
-                    icon: audioOut.muted ? "🔇" : volumeSlider.value < 0.5 ? "🔉" : "🔊"
-                    onClicked: audioOut.muted = !audioOut.muted
+            // Volume Slider
+            Slider {
+                id: volumeSlider
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: volumeBtn.right
+                anchors.leftMargin: audioController.width / 80
+                width: audioController.width / 8
+                from: 0; to: 1; value: 0.6
+                
+                onValueChanged: {
+                    audioOut.volume = value
+                    volumeBtn.muted = false      // unmute when slider moves
+                    audioOut.muted = false       // unmute the actual output too
                 }
 
-                // Volume Slider
-                Slider {
-                    id: volumeSlider
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: audioController.width / 7
-                    from: 0; to: 1; value: 0.6
-                    
-                    onValueChanged: {
-                        audioOut.volume = value
-                        volumeBtn.muted = false      // unmute when slider moves
-                        audioOut.muted = false       // unmute the actual output too
-                    }
+                background: Rectangle {
+                    x: volumeSlider.leftPadding
+                    y: volumeSlider.topPadding + volumeSlider.availableHeight / 2 - height / 2
+                    width: volumeSlider.availableWidth
+                    height: 6
+                    radius: 3
+                    color: '#05262c'
 
-                    background: Rectangle {
-                        x: volumeSlider.leftPadding
-                        y: volumeSlider.topPadding + volumeSlider.availableHeight / 2 - height / 2
-                        width: volumeSlider.availableWidth
-                        height: 6
-                        radius: 3
-                        color: '#05262c'
-
-                        Rectangle {
-                            width: volumeSlider.visualPosition * parent.width
-                            height: parent.height
-                            radius: parent.radius
-                            gradient: Gradient {
-                                orientation: Gradient.Horizontal
-                                GradientStop { position: 0.0; color: '#37c596' }
-                                GradientStop { position: 1.0; color: '#15966b' }
-                            }
+                    Rectangle {
+                        width: volumeSlider.visualPosition * parent.width
+                        height: parent.height
+                        radius: parent.radius
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0.0; color: '#37c596' }
+                            GradientStop { position: 1.0; color: '#15966b' }
                         }
                     }
                 }
+            }
 
-                // Divider
-                Rectangle { width: audioController.width / 14; height: 1 * 0.5; color: 'transparent' }
-
+            Row {
+                anchors.centerIn: parent
+                spacing: audioController.width / 45
                 // Prev
                 ControlBtn {
                     icon: "◀◀"
@@ -509,7 +507,6 @@ Rectangle {
 
                 // Play / Pause
                 Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
                     width: audioController.height * 0.72
                     height: width
                     radius: width / 2
@@ -538,22 +535,71 @@ Rectangle {
                     icon: "▶▶"
                     onClicked: { audioPlayer.position = audioPlayer.duration }
                 }
+            }
 
-                // Divider
-                Rectangle { width: audioController.width / 4; height: 1; color: 'transparent' }
+            // Speed Indicator
+            ControlBtn {
+                id: speedIndicator
+                icon: "1.0x"
+                onClicked: speedSlider.value = 1
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.right: speedSlider.left
+                anchors.rightMargin: audioController.width / 80
+                fontPixel: audioController.width / 55
+            }
 
-                // Browse
-                ControlBtn {
-                    icon: rightPanel.browseIcon
-                    onClicked: rightPanel.currentIndex === 0 ? fileDialog.open() : 
-                               rightPanel.currentIndex === 1 ? urlDialog.open() : console.log("Browse action for other sources coming soon")
+            // Speed Slider
+            Slider {
+                id: speedSlider
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.right: browseBtn.left
+                anchors.rightMargin: audioController.width / 20
+                width: audioController.width / 8
+                from: 0.5; to: 8; value: 1
+                
+                onValueChanged: {
+                    audioPlayer.playbackRate = value
+                    speedIndicator.icon = value.toFixed(1) + "x"
                 }
+
+                background: Rectangle {
+                    x: speedSlider.leftPadding
+                    y: speedSlider.topPadding + speedSlider.availableHeight / 2 - height / 2
+                    width: speedSlider.availableWidth
+                    height: 6
+                    radius: 3
+                    color: '#05262c'
+
+                    Rectangle {
+                        width: speedSlider.visualPosition * parent.width
+                        height: parent.height
+                        radius: parent.radius
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0.0; color: '#37c596' }
+                            GradientStop { position: 1.0; color: '#15966b' }
+                        }
+                    }
+                }
+            }
+
+            // Browse
+            ControlBtn {
+                id: browseBtn
+                icon: rightPanel.browseIcon
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.right: parent.right
+                anchors.rightMargin: audioController.width / 20
+                onClicked: rightPanel.currentIndex === 0 ? fileDialog.open() : 
+                            rightPanel.currentIndex === 1 ? urlDialog.open() : console.log("Browse action for other sources coming soon")
             }
         }
     }
 
     component ControlBtn: Rectangle {
+        id: controlBtn
         property string icon: ""
+        property var fontPixel: audioController.width / 35
         signal clicked()
 
         anchors.verticalCenter: parent.verticalCenter
@@ -569,7 +615,7 @@ Rectangle {
             anchors.centerIn: parent
             text: parent.icon
             color: '#ffffff'
-            font.pixelSize: audioController.width / 35
+            font.pixelSize: controlBtn.fontPixel
         }
 
         MouseArea {
