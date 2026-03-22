@@ -13,13 +13,11 @@ Rectangle {
     MediaPlayer {
         id: audioPlayer
         audioOutput: AudioOutput { id: audioOut; volume: 0.7 }
-        property bool fileSelected: false
         property bool audioSelected: false
         property string errorMessage: ""
 
         onErrorOccurred: function(error, errorString) {
             audioSelected = false
-            fileSelected = false
             switch(error) {
                 case MediaPlayer.NetworkError:
                     errorMessage = "⚠  Cannot reach the server — check your internet connection"
@@ -421,7 +419,7 @@ Rectangle {
 
                 Text {
                     id: currentTimeText 
-                    text: formatTime(audioPlayer.position)
+                    text: audioPage.formatTime(audioPlayer.position)
                     color: '#557a70'
                     font.pixelSize: audioController.height / 5
                     font.family: "Arial"
@@ -431,7 +429,7 @@ Rectangle {
 
                 Text {
                     id: totalTimeText
-                    text: formatTime(audioPlayer.duration)
+                    text: audioPage.formatTime(audioPlayer.duration)
                     color: '#557a70'
                     font.pixelSize: audioController.height / 5
                     font.family: "Arial"
