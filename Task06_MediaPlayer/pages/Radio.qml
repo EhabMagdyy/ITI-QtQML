@@ -8,44 +8,93 @@ Rectangle {
     anchors.fill: parent
     color: "transparent"
 
-    // ── Player ────────────────────────────────────────────────
+    // ========================================= Radio Player ================================================
     MediaPlayer {
         id: radioPlayer
         source: "https://stream.radioparadise.com/aac-320"
         audioOutput: AudioOutput { id: audioOut; volume: volumeSlider.value }
 
-        // onMetaDataChanged: {
-        //     var md = radioPlayer.metaData
-        //     stationName.text   = md.value(MediaMetaData.AlbumArtist)  || "Unknown"
-        //     nowPlaying.text    = md.value(MediaMetaData.Title)         || "—"
-        //     genreText.text     = md.value(MediaMetaData.Genre)         || "Unknown"
-        //     bitrateText.text   = (md.value(MediaMetaData.AudioBitRate) || "320") + " kbps"
-        // }
+        onMediaStatusChanged: {
+            if      (mediaStatus === MediaPlayer.BufferingMedia) statusDot.color = "#ffaa00"
+            else if (mediaStatus === MediaPlayer.BufferedMedia)  statusDot.color = "#00ffaa"
+            else if (mediaStatus === MediaPlayer.StalledMedia)   statusDot.color = "#ff4444"
+            else if (mediaStatus === MediaPlayer.NoMedia)        statusDot.color = "#555555"
+        }
+    }
+    // ========================================= Title & Status ================================================
+    Rectangle {
+        id: titleContainer
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.topMargin: radioPage.height / 5
+        width: titleText.width + titleText.width / 5
+        height: titleText.height + titleText.height / 8
+        color: "#204d55"
+        border.color: '#efffffff'
+        border.width: 2
+        radius: height / 5
 
-        // onMediaStatusChanged: {
-        //     if      (mediaStatus === MediaPlayer.BufferingMedia) statusDot.color = "#ffaa00"
-        //     else if (mediaStatus === MediaPlayer.BufferedMedia)  statusDot.color = "#00ffaa"
-        //     else if (mediaStatus === MediaPlayer.StalledMedia)   statusDot.color = "#ff4444"
-        //     else if (mediaStatus === MediaPlayer.NoMedia)        statusDot.color = "#555555"
-        // }
+        Text {
+            id: titleText
+            anchors.centerIn: parent
+            text: "Radio Paradise"
+            color: '#e7f1ef'
+            font.pixelSize: radioPage.width / 30
+            font.family: "Arial"
+            font.bold: true
+        }
+    }
+    Rectangle {
+        anchors.top: titleContainer.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.topMargin: titleContainer.height / 2
+        width: iconsText.width + iconsText.width / 5
+        height: iconsText.height + iconsText.height / 8
+        color: "transparent"
+
+        Text {
+            id: iconsText
+            anchors.centerIn: parent
+            text: "📻 LIVE"
+            color: '#e7f1ef'
+            font.pixelSize: radioPage.width / 40
+            font.family: "Arial"
+            font.bold: true
+        }
+        Text {
+            id: redDot
+            anchors.left: iconsText.right
+            text: "🔴"
+            color: '#e7f1ef'
+            font.pixelSize: radioPage.width / 40
+            font.family: "Arial"
+            font.bold: true
+            SequentialAnimation on opacity {
+                running: true
+                loops: Animation.Infinite
+                NumberAnimation { to: 1.0; duration: 800; easing.type: Easing.InOutQuad }
+                NumberAnimation { to: 0.0; duration: 800; easing.type: Easing.InOutQuad }
+            }
+        }
     }
     // ====================================== Audio Control Container =======================================
     Rectangle{
         id: audioContainer
         anchors.centerIn: parent
-        width: radioPage.width / 1.5
+        width: radioPage.width / 1.9
         height: radioPage.height / 18
         radius: height / 2
         color: '#368e91'
-
+    
         Row{
             id: audioContRow
             anchors.centerIn: parent
             spacing: audioContainer.width / 80
+            // ========================================= Play/Pause Button ================================================
             Rectangle {
                 id: playBtn
                 anchors.verticalCenter: parent.verticalCenter
-                width: audioContainer.width / 30
+                width: audioContainer.width / 25
                 height: audioContainer.height / 1.4
                 radius: height / 10
                 color: playArea.containsMouse ? '#021418' : '#072a30'
@@ -72,16 +121,16 @@ Rectangle {
                     }
                 }
             }
-
+            
             Rectangle{
                 height: 1
                 width: audioContainer.width / 100
                 color: "transparent"
             }
-
+            // ========================================= Buffering Indicator ================================================
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                width: audioContainer.width / 1.6
+                width: audioContainer.width / 1.8
                 height: 4
                 radius: 2
                 color: '#106372'
@@ -97,6 +146,7 @@ Rectangle {
 
                 // White dot handle at the end
                 Rectangle {
+                    id: statusDot
                     x: (parent.width * radioPlayer.bufferProgress) - width / 2
                     anchors.verticalCenter: parent.verticalCenter
                     width: 10
@@ -112,7 +162,7 @@ Rectangle {
                 width: audioContainer.width / 80
                 color: "transparent"
             }
-
+            // ========================================= Mute Button ================================================
             Rectangle {
                 id: volumeBtn
                 anchors.verticalCenter: parent.verticalCenter
@@ -143,7 +193,7 @@ Rectangle {
                     }
                 }
             }
-
+            // ========================================= Volume Slider ================================================
             Slider {
                 id: volumeSlider
                 anchors.verticalCenter: parent.verticalCenter
@@ -160,8 +210,8 @@ Rectangle {
                     x: volumeSlider.leftPadding
                     y: volumeSlider.topPadding + volumeSlider.availableHeight / 2 - height / 2
                     width: volumeSlider.availableWidth
-                    height: 4
-                    radius: 2
+                    height: 6
+                    radius: 3
                     color: '#05262c'
 
                     Rectangle {
@@ -170,8 +220,8 @@ Rectangle {
                         radius: parent.radius
                         gradient: Gradient {
                             orientation: Gradient.Horizontal
-                            GradientStop { position: 0.0; color: '#50dbad' }
-                            GradientStop { position: 1.0; color: '#22d499' }
+                            GradientStop { position: 0.0; color: '#37c596' }
+                            GradientStop { position: 1.0; color: '#15966b' }
                         }
                     }
                 }
