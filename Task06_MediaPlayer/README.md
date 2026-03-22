@@ -21,6 +21,17 @@
 
 ---
 
+### Methods
+
+| Method | Description |
+|---|---|
+| `play()` | Start or resume playback |
+| `pause()` | Pause playback |
+| `stop()` | Stop and reset position to 0 |
+| `seek(position)` | Seek to position in ms |
+
+---
+
 ### Signals
 
 | Signal | When it fires |
@@ -109,5 +120,34 @@ MediaPlayer {
         volume: 0.8
         muted: false
     }
+}
+```
+
+---
+
+### VideoOutput Properties
+
+
+| Property | Type | Values / Default | Description |
+|---|---|---|---|
+| `fillMode` | `enum` | `PreserveAspectFit` | How video fits the item |
+| `orientation` | `int` | `0` | Rotation in degrees (0/90/180/270) |
+| `mirrored` | `bool` | `false` | Flip horizontally |
+| `sourceRect` | `rect` | `Qt.rect(0,0,0,0)` | Crop region of source (0=full) |
+| `contentRect` | `rect` | read-only | Actual rendered video area |
+
+#### fillMode Values
+
+| Value | Behavior |
+|---|---|
+| `VideoOutput.PreserveAspectFit` | Letterboxed — full video visible |
+| `VideoOutput.PreserveAspectCrop` | Fills area, crops edges |
+| `VideoOutput.Stretch` | Stretches to fill, ignores aspect ratio |
+
+```qml
+VideoOutput {
+    id: videoOut
+    anchors.fill: parent
+    fillMode: VideoOutput.PreserveAspectFit
 }
 ```

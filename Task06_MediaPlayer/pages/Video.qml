@@ -303,8 +303,6 @@ Rectangle {
                 }
 
                 // Status overlay
-                // Add this AFTER VideoOutput inside your video Rectangle
-                // ── Loading Overlay ───────────────────────────────────────
                 Rectangle {
                     id: loadingOverlay
                     anchors.fill: parent
