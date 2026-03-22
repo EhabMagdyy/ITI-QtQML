@@ -38,7 +38,7 @@ ApplicationWindow {
 
         StackView{
             id: stackView
-            initialItem: mainPageComponent
+            initialItem: audioPageComponent
             anchors.fill: parent
             // =========================================== Main Page ============================================
             Component{

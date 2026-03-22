@@ -15,10 +15,10 @@ Rectangle {
         audioOutput: AudioOutput { id: audioOut; volume: volumeSlider.value }
 
         onMediaStatusChanged: {
-            if      (mediaStatus === MediaPlayer.BufferingMedia) statusDot.color = "#ffaa00"
-            else if (mediaStatus === MediaPlayer.BufferedMedia)  statusDot.color = "#00ffaa"
-            else if (mediaStatus === MediaPlayer.StalledMedia)   statusDot.color = "#ff4444"
-            else if (mediaStatus === MediaPlayer.NoMedia)        statusDot.color = "#555555"
+            if (mediaStatus === MediaPlayer.BufferingMedia) statusDot.color = "#ffaa00"
+            else if (mediaStatus === MediaPlayer.BufferedMedia) statusDot.color = "#00ffaa"
+            else if (mediaStatus === MediaPlayer.StalledMedia) statusDot.color = "#ff4444"
+            else if (mediaStatus === MediaPlayer.NoMedia) statusDot.color = "#555555"
         }
     }
     // ========================================= Title & Status ================================================
