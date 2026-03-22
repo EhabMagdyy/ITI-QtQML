@@ -27,7 +27,7 @@ ApplicationWindow {
     // ============================================ Main Content ================================================
     Rectangle {
         anchors.fill: parent
-        radius: mainWindow.width / 60
+        radius: mainWindow.width / 100
         border.color: '#005045'
         border.width: 2
         gradient: Gradient {
@@ -38,7 +38,7 @@ ApplicationWindow {
 
         StackView{
             id: stackView
-            initialItem: audioPageComponent
+            initialItem: mainPageComponent
             anchors.fill: parent
             // =========================================== Main Page ============================================
             Component{
