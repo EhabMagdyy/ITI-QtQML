@@ -12,8 +12,36 @@ Rectangle {
 
     MediaPlayer {
         id: audioPlayer
-        audioOutput: AudioOutput { id: audioOut; volume: 0.8 }
+        audioOutput: AudioOutput { id: audioOut; volume: 0.7 }
         property bool fileSelected: false
+        property bool audioSelected: false
+        property string errorMessage: ""
+
+        onErrorOccurred: function(error, errorString) {
+            audioSelected = false
+            fileSelected = false
+            switch(error) {
+                case MediaPlayer.NetworkError:
+                    errorMessage = "⚠  Cannot reach the server — check your internet connection"
+                    break
+                case MediaPlayer.FormatError:
+                    errorMessage = "⚠  Unsupported audio format"
+                    break
+                case MediaPlayer.AccessDeniedError:
+                    errorMessage = "⚠  Access denied — the server rejected the request"
+                    break
+                case MediaPlayer.ResourceError:
+                    errorMessage = "⚠  Invalid URL or resource not found"
+                    break
+                default:
+                    errorMessage = "⚠  " + errorString
+            }
+        }
+
+        onPlaybackStateChanged: {
+            if (playbackState === MediaPlayer.PlayingState)
+                errorMessage = ""   // clear error when playing successfully
+        }
     }
 
     // ========================================== Left Panel (Source Selection) =========================================
@@ -142,7 +170,7 @@ Rectangle {
                 nameFilters: ["Audio files (*.mp3 *.wav *.aac *.flac *.ogg *.m4a)", "All files (*)"]
                 onAccepted: {
                     audioPlayer.source = fileDialog.selectedFile
-                    audioPlayer.fileSelected = true
+                    audioPlayer.audioSelected = true
                     audioPlayer.play()
                 }
             }
@@ -159,35 +187,138 @@ Rectangle {
                     height: width
                     fillMode: Image.PreserveAspectFit
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: audioPlayer.fileSelected
+                    visible: audioPlayer.audioSelected
                 }
 
                 Text {
-                    text: audioPlayer.fileSelected ? audioPlayer.source.toString().split("/").pop().replace(/\.[^.]+$/, "") : "Select an audio file"
-                    color: audioPlayer.fileSelected ? '#00ffaa' : '#557a70'
-                    font.bold: audioPlayer.fileSelected
-                    font.pixelSize: audioPlayer.fileSelected? audioPage.width / 60 : audioPage.width / 35
+                    text: audioPlayer.audioSelected ? audioPlayer.source.toString().split("/").pop().replace(/\.[^.]+$/, "") : "Select an audio file"
+                    color: audioPlayer.audioSelected ? '#00ffaa' : '#557a70'
+                    font.bold: audioPlayer.audioSelected
+                    font.pixelSize: audioPlayer.audioSelected? audioPage.width / 60 : audioPage.width / 35
                     font.family: "Arial"
-                    width: audioPlayer.fileSelected? audioPage.width / 3 : audioPage.width / 4
+                    width: audioPlayer.audioSelected? audioPage.width / 3 : audioPage.width / 4.1
                     wrapMode: Text.WordWrap
                     anchors.top: parent.top
-                    anchors.topMargin: audioPlayer.fileSelected? audioPage.height / 15 : 0
+                    anchors.topMargin: audioPlayer.audioSelected? audioPage.height / 15 : 0
                 }
             }
         }
 
         // ================================================ Internet audio ============================================
         Rectangle {
+            id: internetAudio
             anchors.fill: parent 
             visible: rightPanel.currentIndex === 1
             color: 'transparent'
 
-            Text {
+            onVisibleChanged: {
+                if (visible) rightPanel.browseIcon = "🌐"
+            }
+
+            Dialog {
+                id: urlDialog
+                title: "Enter Audio URL"
                 anchors.centerIn: parent
-                text: "🌐  Internet — Coming Soon"
-                color: '#557a70'
-                font.pixelSize: audioPage.width / 55
-                font.family: "Arial"
+                width: audioPage.width / 2.5
+                contentHeight: audioPage.height / 10
+                modal: true
+                standardButtons: Dialog.Ok | Dialog.Cancel
+
+                background: Rectangle {
+                    color: '#041c20'
+                    radius: 5
+                    border.color: '#00ffaa44'
+                    border.width: 1
+                }
+
+                header: Rectangle {
+                    color: 'transparent'
+                    height: audioPage.height / 20
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Enter Audio URL"
+                        color: '#00ffaa'
+                        font.pixelSize: audioPage.width / 70
+                        font.bold: true
+                        font.family: "Arial"
+                    }
+                }
+
+                // Styles the Ok/Cancel buttons
+                palette {
+                    buttonText: "#00ffaa"
+                    button: "#041c20"
+                    dark: "#00ffaa"
+                    highlight: "#0d4a52"
+                    window: "#041c20"
+                    windowText: "#ffffff"
+                    base: "#05262c"
+                    text: "#ffffff"
+                }
+
+                onAccepted: {
+                    if(urlField.text !== "") {
+                        audioPlayer.source = urlField.text
+                        audioPlayer.audioSelected = true
+                        audioPlayer.play()
+                    }
+                }
+                onOpened: urlField.forceActiveFocus()
+
+
+                TextField {
+                    id: urlField
+                    width: urlDialog.width - urlDialog.width * 0.1
+                    height: urlDialog.height / 3.3
+                    placeholderText: "https://..."
+                    placeholderTextColor: '#335a55'
+                    color: '#daf3f1'
+                    font.pixelSize: audioPage.width / 90
+                    font.family: "Arial"
+                    leftPadding: 12
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    Keys.onReturnPressed: urlDialog.accept()    // allow Enter key to submit
+
+                    background: Rectangle {
+                        color: '#05262c'
+                        radius: 8
+                        border.color: urlField.activeFocus ? '#00ffaa' : '#00ffaa44'
+                        border.width: 1
+                        Behavior on border.color { ColorAnimation { duration: 150 } }
+                    }
+                }
+            }
+
+            Row {
+                anchors.centerIn: parent
+                anchors.verticalCenterOffset: -audioController.height / 2
+                spacing: audioPage.width / 40
+
+                // Audio image
+                Image {
+                    source: "qrc:/icons/audio.png"
+                    width: audioPage.height / 3
+                    height: width
+                    fillMode: Image.PreserveAspectFit
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: audioPlayer.audioSelected && audioPlayer.errorMessage === ""
+                }
+
+                // Text beside image
+                Text {
+                    text: audioPlayer.errorMessage !== "" ? audioPlayer.errorMessage : audioPlayer.audioSelected ? 
+                          audioPlayer.source.toString().split("/").pop().replace(/\.[^.]+$/, "")  : "Enter audio URL to stream"
+
+                    color: audioPlayer.errorMessage !== "" ? '#ff4444' : audioPlayer.audioSelected ? '#00ffaa' : '#557a70'
+
+                    font.family: "Arial"
+                    font.bold: audioPlayer.audioSelected
+                    font.pixelSize: audioPlayer.errorMessage !== "" ? audioPage.width / 75 : audioPlayer.audioSelected ? audioPage.width / 60 : audioPage.width / 35
+                    wrapMode: Text.WordWrap
+                    width: audioPage.width / 3
+                    anchors.top: parent.top
+                    anchors.topMargin: audioPlayer.audioSelected && audioPlayer.errorMessage === "" ? audioPage.height / 15 : 0
+                }
             }
         }
 
@@ -279,7 +410,7 @@ Rectangle {
                 }
             }
 
-            // ── Time labels ───────────────────────────────────────────
+            // Time labels
             Row {
                 anchors.top: parent.top
                 anchors.left: parent.left
@@ -289,6 +420,7 @@ Rectangle {
                 anchors.rightMargin: audioController.width / 120
 
                 Text {
+                    id: currentTimeText 
                     text: formatTime(audioPlayer.position)
                     color: '#557a70'
                     font.pixelSize: audioController.height / 5
@@ -303,7 +435,6 @@ Rectangle {
                     color: '#557a70'
                     font.pixelSize: audioController.height / 5
                     font.family: "Arial"
-                    anchors.right: parent.right  // won't work in Row, use Item spacer below
                 }
             }
         }
@@ -416,7 +547,8 @@ Rectangle {
                 // Browse
                 ControlBtn {
                     icon: rightPanel.browseIcon
-                    onClicked: rightPanel.currentIndex === 0 ? fileDialog.open() : console.log("Browse action for other sources coming soon")
+                    onClicked: rightPanel.currentIndex === 0 ? fileDialog.open() : 
+                               rightPanel.currentIndex === 1 ? urlDialog.open() : console.log("Browse action for other sources coming soon")
                 }
             }
         }
