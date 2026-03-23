@@ -48,10 +48,9 @@ signals:
 
 private:
     void init();
-    void poll();                          // ← called every 2s, reads everything fresh
+    void poll();                          // called every 0.5s, reads everything fresh
     void sendAvrcpCommand(const QString& command);
 
-    // ── helpers ───────────────────────────────────────────────
     // Returns property map for a given object path + interface
     // using raw QDBusArgument to avoid deserialization issues
     QVariantMap getProperties(const QString& path, const QString& iface);
@@ -60,7 +59,7 @@ private:
     // key = object path, value = list of interface names
     QMap<QString, QStringList> getManagedObjects();
 
-    bool    m_connected     = false;
+    bool m_connected     = false;
     QString m_deviceName;
     QString m_deviceAddress;
     QString m_devicePath;
@@ -71,5 +70,5 @@ private:
     QString m_playerStatus;
 
     QDBusConnection m_bus;
-    QTimer*         m_pollTimer = nullptr;
+    QTimer* m_pollTimer = nullptr;
 };

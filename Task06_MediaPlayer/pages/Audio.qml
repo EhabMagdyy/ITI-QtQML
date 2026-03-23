@@ -190,7 +190,7 @@ Rectangle {
 
                 Text {
                     text: audioPlayer.audioSelected ? audioPlayer.source.toString().split("/").pop().replace(/\.[^.]+$/, "") : "Select an audio file"
-                    color: audioPlayer.audioSelected ? '#00ffaa' : '#557a70'
+                    color: audioPlayer.audioSelected ? '#ffffff' : '#557a70'
                     font.bold: audioPlayer.audioSelected
                     font.pixelSize: audioPlayer.audioSelected? audioPage.width / 60 : audioPage.width / 35
                     font.family: "Arial"
@@ -292,30 +292,80 @@ Rectangle {
                 anchors.verticalCenterOffset: -audioController.height / 2
                 spacing: audioPage.width / 40
 
-                // Audio image
-                Image {
-                    source: "qrc:/icons/audio.png"
+                Item {
+                    id: loadingItem
                     width: audioPage.height / 3
                     height: width
-                    fillMode: Image.PreserveAspectFit
                     anchors.verticalCenter: parent.verticalCenter
                     visible: audioPlayer.audioSelected && audioPlayer.errorMessage === ""
+
+                    property bool isLoading: audioPlayer.mediaStatus === MediaPlayer.BufferingMedia ||
+                                            audioPlayer.mediaStatus === MediaPlayer.LoadingMedia   ||
+                                            audioPlayer.mediaStatus === MediaPlayer.StalledMedia
+
+                    Image {
+                        anchors.fill: parent
+                        source: "qrc:/icons/audio.png"
+                        fillMode: Image.PreserveAspectFit
+                        visible: !parent.isLoading
+                        opacity: visible ? 1 : 0
+                    }
+
+                    // Spinner - shown only while loading
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 8
+                        visible: parent.isLoading    // show only when loading
+
+                        Rectangle {
+                            width: audioPage.width / 30
+                            height: width
+                            radius: width / 2
+                            color: 'transparent'
+                            border.color: '#00ffaa'
+                            border.width: 3
+                            anchors.horizontalCenter: parent.horizontalCenter
+
+                            Rectangle {
+                                width: parent.border.width + 2
+                                height: parent.border.width + 2
+                                color: '#041c20'
+                                anchors.top: parent.top
+                                anchors.horizontalCenter: parent.horizontalCenter
+                            }
+
+                            RotationAnimation on rotation {
+                                running: loadingItem.isLoading
+                                loops: Animation.Infinite
+                                duration: 900
+                                from: 0; to: 360
+                            }
+                        }
+
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: audioPlayer.mediaStatus === MediaPlayer.StalledMedia ? "⚠  Stalled" : "Loading..."
+                            color: '#00ffaa'
+                            font.pixelSize: audioPage.width / 85
+                            font.family: "Arial"
+                        }
+                    }
                 }
 
                 // Text beside image
                 Text {
                     text: audioPlayer.errorMessage !== "" ? audioPlayer.errorMessage : audioPlayer.audioSelected ? 
-                          audioPlayer.source.toString().split("/").pop().replace(/\.[^.]+$/, "")  : "Enter audio URL to stream"
-
-                    color: audioPlayer.errorMessage !== "" ? '#ff4444' : audioPlayer.audioSelected ? '#ffffff' : '#557a70'
-
+                            audioPlayer.source.toString().split("/").pop().replace(/\.[^.]+$/, "") : "Enter audio URL to stream"
+                    color: audioPlayer.errorMessage !== "" ? '#ff4444' : audioPlayer.audioSelected  ? '#ffffff' : '#557a70'
                     font.family: "Arial"
                     font.bold: audioPlayer.audioSelected
-                    font.pixelSize: audioPlayer.errorMessage !== "" ? audioPage.width / 75 : audioPlayer.audioSelected ? audioPage.width / 60 : audioPage.width / 35
+                    font.pixelSize: audioPlayer.errorMessage !== "" ? audioPage.width / 75
+                                : audioPlayer.audioSelected       ? audioPage.width / 60
+                                : audioPage.width / 35
                     wrapMode: Text.WordWrap
                     width: audioPage.width / 3
                     anchors.top: parent.top
-                    anchors.topMargin: audioPlayer.audioSelected && audioPlayer.errorMessage === "" ? audioPage.height / 15 : 0
+                    anchors.topMargin: audioPlayer.audioSelected? audioPage.height / 15 : 0
                 }
             }
         }
