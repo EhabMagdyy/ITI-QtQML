@@ -1,5 +1,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include "Backend/BluetoothManager.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -12,6 +14,8 @@ int main(int argc, char *argv[])
         &app,
         []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
+    BluetoothManager btManager;
+    engine.rootContext()->setContextProperty("btManager", &btManager);
     engine.loadFromModule("Task06_MediaPlayer", "Main");
 
     return app.exec();

@@ -307,7 +307,7 @@ Rectangle {
                     text: audioPlayer.errorMessage !== "" ? audioPlayer.errorMessage : audioPlayer.audioSelected ? 
                           audioPlayer.source.toString().split("/").pop().replace(/\.[^.]+$/, "")  : "Enter audio URL to stream"
 
-                    color: audioPlayer.errorMessage !== "" ? '#ff4444' : audioPlayer.audioSelected ? '#00ffaa' : '#557a70'
+                    color: audioPlayer.errorMessage !== "" ? '#ff4444' : audioPlayer.audioSelected ? '#ffffff' : '#557a70'
 
                     font.family: "Arial"
                     font.bold: audioPlayer.audioSelected
@@ -322,16 +322,148 @@ Rectangle {
 
         // =============================================== Bluetooth audio ===========================================
         Rectangle {
-            anchors.fill: parent 
-            visible: rightPanel.currentIndex === 2 
+            anchors.fill: parent
+            visible: rightPanel.currentIndex === 2
             color: 'transparent'
 
-            Text {
+            onVisibleChanged: {
+                if (visible) rightPanel.browseIcon = "🔵"
+            }
+
+            Connections {
+                target: btManager
+
+                function onTrackInfoChanged() {
+                    console.log("Track changed:", btManager.trackTitle)
+                }
+                function onPlayerStatusChanged() {
+                    console.log("Status:", btManager.playerStatus)
+                }
+                function onConnectedChanged() {
+                    console.log("Connected:", btManager.connected)
+                }
+            }
+
+            Row {
                 anchors.centerIn: parent
-                text: "🔵  Bluetooth — Coming Soon"
-                color: '#557a70'
-                font.pixelSize: audioPage.width / 55
-                font.family: "Arial"
+                anchors.verticalCenterOffset: -audioController.height / 2
+                spacing: audioPage.width / 40
+
+                // Bluetooth image
+                Image {
+                    source: "qrc:/icons/audio.png"
+                    width: audioPage.height / 3
+                    height: width
+                    fillMode: Image.PreserveAspectFit
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: btManager && btManager.connected
+                    opacity: btManager && btManager.playerStatus === "playing" ? 1.0 : 0.5
+                    Behavior on opacity { NumberAnimation { duration: 300 } }
+                }
+
+                // Info column
+                Column {
+                    anchors.top: parent.top
+                    anchors.topMargin: parent.height / 10
+                    spacing: audioPage.height / 40
+
+                    // No device placeholder
+                    Text {
+                        visible: !btManager || !btManager.connected
+                        text: "No device connected"
+                        color: '#557a70'
+                        font.family: "Arial"
+                        font.pixelSize: audioPage.width / 35
+                    }
+
+                    // Device name chip
+                    Rectangle {
+                        visible: btManager && btManager.connected
+                        width: deviceNameText.width + 24
+                        height: deviceNameText.height + 10
+                        radius: height / 2
+                        color: '#0d4a52'
+                        border.color: '#00ffaa44'
+                        border.width: 1
+
+                        Text {
+                            id: deviceNameText
+                            anchors.centerIn: parent
+                            text: btManager ? "🔵  " + btManager.deviceName : ""
+                            color: '#00ffaa'
+                            font.pixelSize: audioPage.width / 90
+                            font.family: "Arial"
+                        }
+                    }
+
+                    // Track title
+                    Text {
+                        visible: btManager && btManager.connected
+                        text: btManager && btManager.trackTitle !== ""
+                            ? btManager.trackTitle
+                            : "Play music on your phone"
+                        color: btManager && btManager.trackTitle !== "" ? '#ffffff' : '#557a70'
+                        font.family: "Arial"
+                        font.bold: btManager && btManager.trackTitle !== ""
+                        font.pixelSize: audioPage.width / 55
+                        wrapMode: Text.WordWrap
+                        width: audioPage.width / 3
+                    }
+
+                    // Artist - Album
+                    Text {
+                        visible: btManager && btManager.connected && btManager.trackArtist !== ""
+                        text: {
+                            if (!btManager) return ""
+                            if (btManager.trackArtist !== "" && btManager.trackAlbum !== "")
+                                return btManager.trackArtist + "  ·  " + btManager.trackAlbum
+                            return btManager.trackArtist
+                        }
+                        color: '#557a70'
+                        font.family: "Arial"
+                        font.pixelSize: audioPage.width / 80
+                        wrapMode: Text.WordWrap
+                        width: audioPage.width / 3
+                    }
+
+                    // Player status chip
+                    Rectangle {
+                        visible: btManager && btManager.connected && btManager.playerStatus !== ""
+                        width: statusText.width + 24
+                        height: statusText.height + 10
+                        radius: height / 2
+                        color: btManager && btManager.playerStatus === "playing" ? '#0d4a52' : '#1a1a1a'
+                        border.color: btManager && btManager.playerStatus === "playing" ? '#00ffaa44' : '#ffffff22'
+                        border.width: 1
+
+                        // Pulsing dot
+                        Rectangle {
+                            width: 6; height: 6; radius: 3
+                            anchors.left: parent.left
+                            anchors.leftMargin: 10
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: btManager && btManager.playerStatus === "playing" ? '#00ffaa' : '#557a70'
+
+                            SequentialAnimation on opacity {
+                                running: btManager && btManager.playerStatus === "playing"
+                                loops: Animation.Infinite
+                                NumberAnimation { to: 0.2; duration: 600; easing.type: Easing.InOutSine }
+                                NumberAnimation { to: 1.0; duration: 600; easing.type: Easing.InOutSine }
+                            }
+                        }
+
+                        Text {
+                            id: statusText
+                            anchors.centerIn: parent
+                            leftPadding: 8
+                            text: btManager ? btManager.playerStatus.charAt(0).toUpperCase()
+                                            + btManager.playerStatus.slice(1) : ""
+                            color: btManager && btManager.playerStatus === "playing" ? '#00ffaa' : '#557a70'
+                            font.pixelSize: audioPage.width / 95
+                            font.family: "Arial"
+                        }
+                    }
+                }
             }
         }
 
@@ -354,6 +486,7 @@ Rectangle {
         // ========================================== Progress Slider ================================================
         Rectangle {
             id: audioProgress
+            visible: rightPanel.currentIndex !== 2
             anchors.bottom: audioController.top
             anchors.left: audioController.left
             anchors.right: audioController.right
@@ -453,6 +586,7 @@ Rectangle {
             ControlBtn {
                 id: volumeBtn
                 property bool muted: false
+                visible: rightPanel.currentIndex !== 2
                 icon: audioOut.muted ? "🔇" : volumeSlider.value < 0.5 ? "🔉" : "🔊"
                 onClicked: audioOut.muted = !audioOut.muted
                 anchors.verticalCenter: parent.verticalCenter
@@ -464,6 +598,7 @@ Rectangle {
             Slider {
                 id: volumeSlider
                 anchors.verticalCenter: parent.verticalCenter
+                visible: rightPanel.currentIndex !== 2
                 anchors.left: volumeBtn.right
                 anchors.leftMargin: audioController.width / 80
                 width: audioController.width / 8
@@ -502,7 +637,12 @@ Rectangle {
                 // Prev
                 ControlBtn {
                     icon: "◀◀"
-                    onClicked: { audioPlayer.position = 0 }
+                    onClicked: {
+                        if (rightPanel.currentIndex === 2 && btManager && btManager.connected)
+                            btManager.previous()
+                        else
+                            audioPlayer.position = 0
+                    }
                 }
 
                 // Play / Pause
@@ -514,9 +654,20 @@ Rectangle {
                     Behavior on color { ColorAnimation { duration: 150 } }
 
                     Text {
+                        id: playPauseText
                         anchors.centerIn: parent
-                        text: audioPlayer.playbackState === MediaPlayer.PlayingState ? "❚❚" : "▶"
-                        font.pixelSize: audioPlayer.playbackState === MediaPlayer.PlayingState ? parent.width / 2.4 : parent.width / 2
+                        text:   if(rightPanel.currentIndex === 2 && btManager && btManager.connected){
+                                    btManager.playerStatus === "playing" ? "❚❚" : "▶"
+                                } 
+                                else {
+                                    audioPlayer.playbackState === MediaPlayer.PlayingState ? "❚❚" : "▶"
+                                }
+                        font.pixelSize: if(rightPanel.currentIndex === 2 && btManager && btManager.connected){
+                                            btManager.playerStatus === "playing" ? parent.width / 2.4 : parent.width / 2
+                                        } 
+                                        else {
+                                            audioPlayer.playbackState === MediaPlayer.PlayingState ? parent.width / 2.4 : parent.width / 2
+                                        }
                         color: '#002a31'
                         font.bold: true
                     }
@@ -525,15 +676,31 @@ Rectangle {
                         id: playMainArea
                         anchors.fill: parent
                         hoverEnabled: true
-                        onClicked: audioPlayer.playbackState === MediaPlayer.PlayingState
-                                ? audioPlayer.pause() : audioPlayer.play()
+                         onClicked: {
+                            if(rightPanel.currentIndex === 2 && btManager && btManager.connected) {
+                                if(btManager.playerStatus === "playing") {
+                                    btManager.pause();
+                                } 
+                                else {
+                                    btManager.play();
+                                }
+                            } 
+                            else {
+                                audioPlayer.playbackState === MediaPlayer.PlayingState ? audioPlayer.pause() : audioPlayer.play()
+                            }
+                        }
                     }
                 }
 
                 // Next
                 ControlBtn {
                     icon: "▶▶"
-                    onClicked: { audioPlayer.position = audioPlayer.duration }
+                    onClicked: {
+                        if (rightPanel.currentIndex === 2 && btManager && btManager.connected)
+                            btManager.next()
+                        else
+                            audioPlayer.position = audioPlayer.duration
+                    }
                 }
             }
 
@@ -541,6 +708,7 @@ Rectangle {
             ControlBtn {
                 id: speedIndicator
                 icon: "1.0x"
+                visible: rightPanel.currentIndex !== 2
                 onClicked: speedSlider.value = 1
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.right: speedSlider.left
@@ -552,6 +720,7 @@ Rectangle {
             Slider {
                 id: speedSlider
                 anchors.verticalCenter: parent.verticalCenter
+                visible: rightPanel.currentIndex !== 2
                 anchors.right: browseBtn.left
                 anchors.rightMargin: audioController.width / 20
                 width: audioController.width / 8
