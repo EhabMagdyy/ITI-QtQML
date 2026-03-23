@@ -1,6 +1,6 @@
 # Media Player (Radio Streaming / Audio & Video Player via multiple sources)
 
-## Qt MediaPlayer
+## 1. Qt MediaPlayer
 
 ### Properties
 
@@ -151,3 +151,84 @@ VideoOutput {
     fillMode: VideoOutput.PreserveAspectFit
 }
 ```
+
+
+---
+ 
+## 2. Bluetooth Manager
+ 
+Handles Bluetooth A2DP audio streaming and AVRCP media control via BlueZ D-Bus.
+ 
+### Architecture
+ 
+```
+Phone (music app)
+    ↓ Bluetooth A2DP profile
+Linux BlueZ Stack (D-Bus)
+    ↓
+PulseAudio / PipeWire (audio routed automatically)
+    ↓
+BluetoothManager (polls BlueZ every 0.5s)
+    ↓
+QML UI (reacts to property changes)
+```
+ 
+### Bluetooth Profiles Used
+ 
+| Profile | UUID | Purpose |
+|---|---|---|
+| A2DP Source | `0000110a` | Streams audio from phone to Linux |
+| AVRCP Target | `0000110c` | Receives media commands |
+| AVRCP Controller | `0000110e` | Sends play/pause/next to phone |
+ 
+---
+ 
+### QML-Exposed Properties
+ 
+| Property | Type | Description |
+|---|---|---|
+| `connected` | `bool` | Whether a BT device is currently connected |
+| `deviceName` | `string` | Name of connected device (e.g. "Ehab") |
+| `deviceAddress` | `string` | MAC address (e.g. "F0:65:AE:CF:34:F9") |
+| `trackTitle` | `string` | Current song title via AVRCP |
+| `trackArtist` | `string` | Current artist via AVRCP |
+| `trackAlbum` | `string` | Current album via AVRCP |
+| `playerStatus` | `string` | `"playing"` / `"paused"` / `"stopped"` |
+| `trackImageUrl` | `string` | Album art URL (fetched from iTunes API) |
+ 
+---
+ 
+### QML-Invokable Methods (AVRCP Controls)
+ 
+| Method | Description |
+|---|---|
+| `play()` | Send play command to phone |
+| `pause()` | Send pause command to phone |
+| `stop()` | Send stop command to phone |
+| `next()` | Skip to next track on phone |
+| `previous()` | Go to previous track on phone |
+| `setVolume(int percent)` | Set system volume via amixer (0–100) |
+ 
+---
+ 
+### Signals
+ 
+| Signal | When it fires |
+|---|---|
+| `connectedChanged` | Device connects or disconnects |
+| `deviceNameChanged` | Device name becomes available |
+| `deviceAddressChanged` | Device address becomes available |
+| `trackInfoChanged` | Track title / artist / album / image changes |
+| `playerStatusChanged` | Playback status changes (playing/paused/stopped) |
+| `errorOccurred(message)` | Any D-Bus or AVRCP error |
+ 
+---
+ 
+### How It Works
+ 
+- Polls BlueZ `GetManagedObjects` every **2 seconds** via D-Bus
+- Uses raw `QDBusArgument` parsing to handle BlueZ's nested `a{oa{sa{sv}}}` type
+- Emits signals **only when values actually change** to avoid redundant QML updates
+- `MediaPlayer1` interface only appears in BlueZ **after the phone starts playing audio**
+- Audio routing happens automatically via PulseAudio/PipeWire — no extra code needed
+ 
