@@ -60,8 +60,7 @@ Rectangle {
                 model: [
                     { label: "🗂️  Local",    idx: 0 },
                     { label: "🌐  Internet", idx: 1 },
-                    { label: "🔵  Bluetooth",idx: 2 },
-                    { label: "💾  USB",      idx: 3 }
+                    { label: "💾  USB",      idx: 2 }
                 ]
 
                 delegate: Rectangle {
@@ -99,7 +98,7 @@ Rectangle {
             // =============== Spacer ===================
             Rectangle{
                 width: 1
-                height: videoPage.height / 3
+                height: videoPage.height / 2.3
                 color: "transparent"
             }
 
@@ -359,21 +358,6 @@ Rectangle {
             }
         }
 
-        // =============================================== Bluetooth video ===========================================
-        Rectangle {
-            anchors.fill: parent 
-            visible: rightPanel.currentIndex === 2 
-            color: 'transparent'
-
-            Text {
-                anchors.centerIn: parent
-                text: "🔵  Bluetooth — Coming Soon"
-                color: '#557a70'
-                font.pixelSize: videoPage.width / 55
-                font.family: "Arial"
-            }
-        }
-
         // ================================================== USB video ==============================================
         Rectangle {
             anchors.fill: parent 
@@ -470,7 +454,7 @@ Rectangle {
                 text: videoPlayer.videoSelected
                     ? videoPlayer.source.toString().split("/").pop().replace(/\.[^.]+$/, "")
                     : ""
-                color: '#00ffaa'
+                color: '#ffffff'
                 font.pixelSize: videoController.height / 5
                 font.family: "Arial"
                 horizontalAlignment: Text.AlignHCenter 
