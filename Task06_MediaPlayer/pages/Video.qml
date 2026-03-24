@@ -361,15 +361,249 @@ Rectangle {
         // ================================================== USB video ==============================================
         Rectangle {
             anchors.fill: parent 
-            visible: rightPanel.currentIndex === 3
+            visible: rightPanel.currentIndex === 2 
             color: 'transparent'
 
+            onVisibleChanged: {
+                if (visible) {
+                    rightPanel.browseIcon = "💾"
+                    // Auto-scan if connected but no files yet
+                    if (usbManager.connected && usbManager.videoFiles.length === 0 && !usbManager.scanning) {
+                        usbManager.scanFiles()
+                    }
+                }
+            }
+
+            // No USB connected
             Text {
                 anchors.centerIn: parent
-                text: "🔌  USB — Coming Soon"
+                visible: !usbManager.connected
+                text: "Plug in a USB device"
                 color: '#557a70'
-                font.pixelSize: videoPage.width / 55
+                font.pixelSize: videoPage.width / 35
                 font.family: "Arial"
+            }
+
+            // Loading indicator (same style as audio)
+            Rectangle {
+                anchors.fill: parent
+                anchors.topMargin: videoPage.width / 65
+                anchors.rightMargin: videoPage.width / 65
+                anchors.leftMargin: videoPage.width / 65
+                anchors.bottomMargin: videoPage.width / 18
+                color: '#041c20'
+                visible: usbManager.scanning
+                z: 5
+                radius: videoPage.width / 60
+
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 20
+
+                    Rectangle {
+                        width: 40; height: 40; radius: 20
+                        color: 'transparent'
+                        border.color: '#00ffaa'
+                        border.width: 3
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        
+                        Rectangle {
+                            width: 6; height: 6
+                            color: '#041c20'
+                            anchors.top: parent.top
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            anchors.topMargin: -2
+                        }
+
+                        RotationAnimation on rotation {
+                            running: parent.visible
+                            loops: Animation.Infinite
+                            duration: 900
+                            from: 0; to: 360
+                        }
+                    }
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "Scanning " + usbManager.driveName + "..."
+                        color: '#00ffaa'
+                        font.pixelSize: videoPage.width / 60
+                        font.family: "Arial"
+                    }
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "This may take a moment for phones (MTP)"
+                        color: '#557a70'
+                        font.pixelSize: videoPage.width / 80
+                        font.family: "Arial"
+                    }
+
+                    // Cancel button
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: cancelText.width * 2.5
+                        height: cancelText.height + 16
+                        radius: height / 2
+                        color: cancelArea.containsMouse ? "#ff4444" : "#aa2222"
+                        
+                        Text {
+                            id: cancelText
+                            anchors.centerIn: parent
+                            text: "Cancel Scan"
+                            color: "#ffffff"
+                            font.pixelSize: videoPage.width / 60
+                            font.family: "Arial"
+                            font.bold: true
+                        }
+                        
+                        MouseArea {
+                            id: cancelArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: usbManager.disconnectDevice()
+                        }
+                    }
+                    
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "Found: " + usbManager.videoFiles.length + " video files"
+                        color: '#557a70'
+                        font.pixelSize: videoPage.width / 80
+                        visible: usbManager.videoFiles.length > 0
+                    }
+                }
+            }
+
+            // Video display area (when video selected)
+            Rectangle {
+                anchors.fill: parent
+                anchors.bottomMargin: videoController.height + videoProgress.height + videoPage.height / 16
+                anchors.margins: videoPage.height / 50
+                color: '#49177566'
+                radius: height / 50
+                visible: usbManager.connected && !usbManager.scanning && !videoPlayer.videoSelected
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "Select a video from the list below"
+                    color: '#557a70'
+                    font.pixelSize: videoPage.width / 35
+                    font.family: "Arial"
+                }
+            }
+
+            // File list
+            Column {
+                anchors.fill: parent
+                anchors.margins: videoPage.height / 20
+                anchors.bottomMargin: videoController.height + videoPage.height / 20
+                spacing: videoPage.height / 30
+                visible: usbManager.connected && !usbManager.scanning
+
+                // Drive name header
+                Row {
+                    id: videoDriveHeader
+                    spacing: 10
+                    Text {
+                        text: "🔌  " + usbManager.driveName
+                        color: '#00ffaa'
+                        font.pixelSize: videoPage.width / 55
+                        font.bold: true
+                        font.family: "Arial"
+                    }
+                    Text {
+                        text: usbManager.videoFiles.length + " files"
+                        color: '#557a70'
+                        font.pixelSize: videoPage.width / 75
+                        font.family: "Arial"
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                // Video List
+                ListView {
+                    id: videoFileList
+                    width: parent.width
+                    height: parent.height - parent.spacing - videoDriveHeader.height
+                    clip: true
+                    model: usbManager.videoFiles
+                    spacing: 4
+
+                    ScrollBar.vertical: ScrollBar {
+                        id: videoScrollBar
+                        width: videoPage.width / 100
+                        anchors.right: parent.right
+                        anchors.rightMargin: 4
+                        
+                        contentItem: Rectangle {
+                            implicitWidth: parent.width
+                            radius: width / 2
+                            color: videoScrollBar.pressed ? '#00ffaa' : videoScrollBar.hovered ? '#00cc88' : '#0d4a52'
+                            opacity: videoScrollBar.hovered || videoScrollBar.pressed ? 1.0 : 0.6
+                            Behavior on color { ColorAnimation { duration: 150 } }
+                            Behavior on opacity { NumberAnimation { duration: 150 } }
+                        }
+                        
+                        background: Rectangle {
+                            implicitWidth: parent.width
+                            color: '#05262c'
+                            radius: width / 2
+                            opacity: 0.3
+                        }
+                        minimumSize: 0.1
+                    }
+
+                    delegate: Rectangle {
+                        required property string modelData
+                        required property int index
+                        width: ListView.view.width - videoScrollBar.width * 2
+                        height: videoPage.height / 14
+                        radius: height / 5
+                        color: videoPlayer.source.toString() === ("file://" + modelData)
+                            ? '#0d4a52'
+                            : videoRowArea.containsMouse ? '#072830' : 'transparent'
+                        border.color: videoPlayer.source.toString() === ("file://" + modelData)
+                                    ? '#00ffaa' : 'transparent'
+                        border.width: 1
+                        Behavior on color { ColorAnimation { duration: 120 } }
+
+                        Row {
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.left: parent.left
+                            anchors.leftMargin: parent.width / 20
+                            spacing: parent.width / 30
+
+                            Text {
+                                text: "🎬"
+                                font.pixelSize: videoPage.width / 70
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+
+                            Text {
+                                text: usbManager.fileName(modelData)
+                                color: videoPlayer.source.toString() === ("file://" + modelData)
+                                    ? '#00ffaa' : '#d0e8e4'
+                                font.pixelSize: videoPage.width / 70
+                                font.family: "Arial"
+                                elide: Text.ElideRight
+                                width: parent.parent.width * 0.7
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        MouseArea {
+                            id: videoRowArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: {
+                                videoPlayer.source = "file://" + modelData
+                                videoPlayer.videoSelected = true
+                                videoPlayer.play()
+                            }
+                        }
+                    }
+                }
             }
         }
 
