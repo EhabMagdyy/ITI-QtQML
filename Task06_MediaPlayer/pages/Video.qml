@@ -185,7 +185,7 @@ Rectangle {
                 anchors.fill: parent
                 anchors.bottomMargin: videoController.height + videoProgress.height + videoPage.height / 16
                 anchors.margins: videoPage.height / 50
-                color: '#49177566'
+                color: videoPlayer.videoSelected ? "#041c20" : 'transparent'
                 radius: height / 50
 
                 // Show placeholder when nothing selected
@@ -288,7 +288,7 @@ Rectangle {
                 anchors.fill: parent
                 anchors.bottomMargin: videoController.height + videoProgress.height + videoPage.height / 16
                 anchors.margins: videoPage.height / 50
-                color: '#49177566'
+                color: videoPlayer.videoSelected ? "#041c20" : 'transparent'
                 radius: height / 50
 
                 // Placeholder
@@ -360,7 +360,12 @@ Rectangle {
 
         // ================================================== USB video ==============================================
         Rectangle {
-            anchors.fill: parent 
+            anchors.fill: parent
+            anchors.topMargin: videoPage.width / 90
+            anchors.rightMargin: videoPage.width / 90
+            anchors.leftMargin: videoPage.width / 90
+            anchors.bottomMargin: videoPage.height /5.35
+            radius: videoPage.width / 20
             visible: rightPanel.currentIndex === 2 
             color: 'transparent'
 
@@ -376,7 +381,9 @@ Rectangle {
 
             // No USB connected
             Text {
-                anchors.centerIn: parent
+                anchors.top: parent.top
+                anchors.topMargin: parent.height / 2.2
+                anchors.horizontalCenter: parent.horizontalCenter
                 visible: !usbManager.connected
                 text: "Plug in a USB device"
                 color: '#557a70'
@@ -387,10 +394,6 @@ Rectangle {
             // Loading indicator (same style as audio)
             Rectangle {
                 anchors.fill: parent
-                anchors.topMargin: videoPage.width / 65
-                anchors.rightMargin: videoPage.width / 65
-                anchors.leftMargin: videoPage.width / 65
-                anchors.bottomMargin: videoPage.width / 18
                 color: '#041c20'
                 visible: usbManager.scanning
                 z: 5
@@ -475,38 +478,21 @@ Rectangle {
                 }
             }
 
-            // Video display area (when video selected)
-            Rectangle {
-                anchors.fill: parent
-                anchors.bottomMargin: videoController.height + videoProgress.height + videoPage.height / 16
-                anchors.margins: videoPage.height / 50
-                color: '#49177566'
-                radius: height / 50
-                visible: usbManager.connected && !usbManager.scanning && !videoPlayer.videoSelected
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "Select a video from the list below"
-                    color: '#557a70'
-                    font.pixelSize: videoPage.width / 35
-                    font.family: "Arial"
-                }
-            }
-
             // File list
             Column {
                 anchors.fill: parent
-                anchors.margins: videoPage.height / 20
-                anchors.bottomMargin: videoController.height + videoPage.height / 20
+                anchors.topMargin: parent.height / 20
+                anchors.leftMargin: parent.width / 20
+                anchors.rightMargin: parent.width / 20
                 spacing: videoPage.height / 30
-                visible: usbManager.connected && !usbManager.scanning
+                visible: usbManager.connected && !usbManager.scanning && !videoPlayer.videoSelected
 
                 // Drive name header
                 Row {
                     id: videoDriveHeader
                     spacing: 10
                     Text {
-                        text: "🔌  " + usbManager.driveName
+                        text: "💾  " + usbManager.driveName
                         color: '#00ffaa'
                         font.pixelSize: videoPage.width / 55
                         font.bold: true
@@ -605,6 +591,14 @@ Rectangle {
                     }
                 }
             }
+
+            // Video container (for styling corners when video plays)
+            Rectangle {
+                anchors.fill: parent
+                color: '#041c20'
+                radius: height / 50
+                visible: videoPlayer.videoSelected
+            }
         }
 
         // ======================================== Video Controls (Shared) ==========================================
@@ -677,7 +671,7 @@ Rectangle {
                 font.family: "Arial"
             }
 
-            // Show filename overlay at top
+            // Show filename
             Text {
                 visible: videoPlayer.videoSelected
                 anchors.top: videoProgress.top
@@ -706,7 +700,7 @@ Rectangle {
                 font.family: "Arial"
             }
         }
-        // ========================================== Playback Controls ================================================
+        // ========================================== Playback Controls ==============================================
         Rectangle {
             id: videoController
             anchors.bottom: parent.bottom
@@ -863,6 +857,41 @@ Rectangle {
                 onClicked: rightPanel.currentIndex === 0 ? fileDialog.open() : 
                             rightPanel.currentIndex === 1 ? urlDialog.open() :
                             console.log("Browse action for other sources coming soon")
+            }
+        }
+
+        // ========================================== Close Video Button =============================================
+        Rectangle {
+            width: videoPage.width / 35
+            height: width
+            radius: width / 2
+            color: closeArea.containsMouse ? '#ff4444' : '#aa2222'
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.topMargin: videoPage.height / 35
+            anchors.rightMargin: videoPage.height / 32
+            visible: videoPlayer.videoSelected
+            opacity: 0.4
+            z: 10
+
+            Text {
+                anchors.centerIn: parent
+                text: "✖"
+                color: "#ffffff"
+                font.pixelSize: parent.width * 0.6
+                font.bold: true
+            }
+
+            MouseArea {
+                id: closeArea
+                anchors.fill: parent
+                hoverEnabled: true
+                onEntered: parent.opacity = 1
+                onExited: parent.opacity = 0.4
+                onClicked: {
+                    videoPlayer.stop()
+                    videoPlayer.videoSelected = false
+                }
             }
         }
     }
