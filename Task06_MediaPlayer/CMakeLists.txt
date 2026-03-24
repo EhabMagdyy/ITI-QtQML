@@ -6,13 +6,14 @@ set(CMAKE_AUTORCC ON)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Quick DBus)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Quick DBus Concurrent)
 
 qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(appTask06_MediaPlayer
     main.cpp
     Backend/BluetoothManager.cpp
+    Backend/USBManager.cpp
 )
 
 qt_add_qml_module(appTask06_MediaPlayer
@@ -40,6 +41,7 @@ set_target_properties(appTask06_MediaPlayer PROPERTIES
 target_link_libraries(appTask06_MediaPlayer
     PRIVATE Qt6::Quick
     PRIVATE Qt6::DBus
+    PRIVATE Qt6::Concurrent
 )
 
 include(GNUInstallDirs)
