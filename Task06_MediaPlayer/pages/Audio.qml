@@ -15,6 +15,7 @@ Rectangle {
         audioOutput: AudioOutput { id: audioOut; volume: 0.7 }
         property bool audioSelected: false
         property string errorMessage: ""
+        property int currentFileIndex: -1
 
         onErrorOccurred: function(error, errorString) {
             audioSelected = false
@@ -647,7 +648,7 @@ Rectangle {
                     id: driveHeader
                     spacing: 10
                     Text {
-                        text: "🔌  " + usbManager.driveName
+                        text: "💾  " + usbManager.driveName
                         color: '#00ffaa'
                         font.pixelSize: audioPage.width / 55
                         font.bold: true
@@ -697,6 +698,7 @@ Rectangle {
                     }
 
                     delegate: Rectangle {
+                        id: fileRow
                         required property string modelData
                         required property int index
                         width: ListView.view.width - listScrollBar.width * 2 
@@ -723,8 +725,8 @@ Rectangle {
                             }
 
                             Text {
-                                text: usbManager.fileName(modelData)
-                                color: audioPlayer.source.toString() === ("file://" + modelData)
+                                text: usbManager.fileName(fileRow.modelData)
+                                color: audioPlayer.source.toString() === ("file://" + fileRow.modelData)
                                     ? '#00ffaa' : '#d0e8e4'
                                 font.pixelSize: audioPage.width / 70
                                 font.family: "Arial"
@@ -739,8 +741,9 @@ Rectangle {
                             anchors.fill: parent
                             hoverEnabled: true
                             onClicked: {
-                                audioPlayer.source = "file://" + modelData
+                                audioPlayer.source = "file://" + fileRow.modelData
                                 audioPlayer.audioSelected = true
+                                audioPlayer.currentFileIndex = fileRow.index
                                 audioPlayer.play()
                             }
                         }
@@ -905,8 +908,17 @@ Rectangle {
                 ControlBtn {
                     icon: "◀◀"
                     onClicked: {
+                        // navigate files in Bluetooth or USB mode
                         if (rightPanel.currentIndex === 2 && btManager && btManager.connected)
                             btManager.previous()
+                        else if (rightPanel.currentIndex === 3 && usbManager.connected && usbManager.audioFiles.length > 0) {
+                            var newIndex = audioPlayer.currentFileIndex - 1
+                            if(newIndex < 0) newIndex = usbManager.audioFiles.length - 1  // Wrap to end
+                            audioPlayer.currentFileIndex = newIndex
+                            audioPlayer.source = "file://" + usbManager.audioFiles[newIndex]
+                            audioPlayer.audioSelected = true
+                            audioPlayer.play()
+                        }
                         else
                             audioPlayer.position = 0
                     }
@@ -965,6 +977,14 @@ Rectangle {
                     onClicked: {
                         if (rightPanel.currentIndex === 2 && btManager && btManager.connected)
                             btManager.next()
+                        else if (rightPanel.currentIndex === 3 && usbManager.connected && usbManager.audioFiles.length > 0) {
+                            var newIndex = audioPlayer.currentFileIndex + 1
+                            if(newIndex >= usbManager.audioFiles.length) newIndex = 0  // Wrap to beginning
+                            audioPlayer.currentFileIndex = newIndex
+                            audioPlayer.source = "file://" + usbManager.audioFiles[newIndex]
+                            audioPlayer.audioSelected = true
+                            audioPlayer.play()
+                        }
                         else
                             audioPlayer.position = audioPlayer.duration
                     }

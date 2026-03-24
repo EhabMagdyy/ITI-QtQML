@@ -152,7 +152,6 @@ VideoOutput {
 }
 ```
 
-
 ---
  
 ## 2. Bluetooth Manager
@@ -232,3 +231,142 @@ QML UI (reacts to property changes)
 - `MediaPlayer1` interface only appears in BlueZ **after the phone starts playing audio**
 - Audio routing happens automatically via PulseAudio/PipeWire — no extra code needed
  
+---
+
+## 3. USB Manager
+
+Detects and scans USB flash drives and phones connected via USB (MTP protocol).
+Supports background file scanning with live progress updates.
+
+### Architecture
+
+```
+USB Flash Drive                    Phone via USB (MTP)
+    ↓ block device                     ↓ MTP protocol
+udisks2 (D-Bus)                    gvfs (userspace)
+    ↓                                  ↓
+/media/user/DRIVE/             /run/user/1000/gvfs/mtp:host=.../Internal storage/
+    ↓                                  ↓
+         UsbManager (polls both paths every 3s)
+                        ↓
+         QDir recursive scan (background thread)
+                        ↓
+              QML UI (file list updates live)
+```
+
+| Aspect                 | USB Flash Drive                              | Phone via USB (MTP)                         |
+| ---------------------- | -------------------------------------------- | ------------------------------------------- |
+| **Device Type**        | Block device                                 | MTP (Media Transfer Protocol) device        |
+| **Abstraction Layer**  | `udisks2` (D-Bus service)                    | `gvfs` (userspace virtual filesystem)       |
+| **Access Method**      | Direct block-level access                    | File-level protocol translation             |
+| **Mount Point**        | `/media/$USER/` or `/run/media/$USER/`       | `mtp://[device-id]/` (virtual URI)          |
+| **Filesystem**         | Exposed directly (FAT32, exFAT, NTFS, etc.)  | Abstracted via protocol—no direct FS access |
+| **Kernel Interaction** | Kernel block driver (`usb-storage`)          | No kernel driver; purely userspace          |
+| **Performance**        | Higher throughput (raw block I/O)            | Lower throughput (protocol overhead)        |
+| **Permissions**        | Managed by `udisks2` polkit rules            | Managed by `gvfs` and session permissions   |
+| **Use Case**           | General storage, bootable media, disk images | Media sync, file transfer with smartphones  |
+| **Hotplug Handling**   | `udev` + `udisks2` automount                 | `gvfs-mtp` volume monitor                   |
+| **Command Line Tools** | `lsblk`, `mount`, `dd`, `fdisk`              | `gio`, `jmtpfs`, `simple-mtpfs`             |
+
+
+---
+
+### Device Support
+
+| Device Type | Protocol | Detection Method | Mount Path |
+|---|---|---|---|
+| USB Flash Drive | FAT32 / NTFS | udisks2 D-Bus signals | `/media/<user>/<label>/` |
+| Android Phone | MTP | gvfs directory polling | `/run/user/1000/gvfs/mtp:host=.../Internal storage/` |
+| iPhone | gphoto2/MTP | gvfs directory polling | `/run/user/1000/gvfs/gphoto2:...` |
+
+---
+
+### QML-Exposed Properties
+
+| Property | Type | Description |
+|---|---|---|
+| `connected` | `bool` | Whether a USB device is currently detected |
+| `scanning` | `bool` | True while file scan is running in background |
+| `mountPath` | `string` | Full path to the device's root e.g. `/run/user/1000/gvfs/mtp:.../Internal storage` |
+| `driveName` | `string` | Label of the drive e.g. `"USB_DRIVE"` or `"SAMSUNG Android"` |
+| `audioFiles` | `QStringList` | Full paths of all audio files found (updates live during scan) |
+| `videoFiles` | `QStringList` | Full paths of all video files found (updates live during scan) |
+
+---
+
+### QML-Invokable Methods
+
+| Method | Description |
+|---|---|
+| `fileName(path)` | Returns just the filename without path or extension |
+| `disconnectDevice()` | Manually disconnect — stops scan thread and clears state |
+
+---
+
+### Signals
+
+| Signal | When it fires |
+|---|---|
+| `connectedChanged` | Device plugged in or removed |
+| `scanningChanged` | Scan starts or finishes |
+| `mountPathChanged` | Mount path becomes available |
+| `driveNameChanged` | Drive label becomes available |
+| `filesChanged` | File list updated (fires every 20 files during scan for live updates) |
+| `errorOccurred(message)` | D-Bus or filesystem error |
+
+---
+
+### How It Works
+
+**Detection (two parallel paths):**
+- **Flash drives** — watches `udisks2` D-Bus `InterfacesAdded` / `InterfacesRemoved` signals. Skips system disks using `HintSystem` and `HintIgnore` properties.
+- **MTP phones** — polls `/run/user/<uid>/gvfs/` every 3 seconds. Looks for entries starting with `mtp:` or `gphoto2:`. Prefers `"Internal storage"` subfolder if present.
+- A 3-second poll timer also handles delayed mounts and disconnect detection by checking if `mountPath` still exists on disk.
+
+**File scanning (background thread):**
+- Runs in a `QtConcurrent` thread to avoid blocking the UI.
+- Skips irrelevant folders: `Android/`, `.thumbnails/`, `.cache/`, `DCIM/`, `Photos/`, `System Volume Information/`, `$RECYCLE.BIN/`, and others.
+- Emits `filesChanged` every 20 files found — the QML list updates live as files are discovered.
+- Supports cancellation via `m_scanning = false` flag (checked on every file).
+- Caps at 5000 files to prevent infinite scans on large drives.
+
+---
+
+### Supported File Extensions
+
+**Audio:**
+```
+mp3  wav  aac  flac  ogg  m4a  wma  opus  aiff
+```
+
+**Video:**
+```
+mp4  mkv  avi  mov  wmv  webm  flv  m4v  ts
+```
+
+---
+
+### CMakeLists.txt
+
+```cmake
+find_package(Qt6 REQUIRED COMPONENTS DBus Concurrent)
+
+target_link_libraries(YourApp PRIVATE
+    Qt6::DBus
+    Qt6::Concurrent
+)
+```
+
+---
+
+### Important Notes
+
+| Note | Detail |
+|---|---|
+| MTP file access | Files on MTP-mounted phones are accessed via gvfs FUSE — same as local files once mounted |
+| Source format | Always prefix with `"file://"` → `audioPlayer.source = "file://" + filePath` |
+| Scan is progressive | `audioFiles` grows during scan — bind the `ListView` to it directly for live updates |
+| `scanning` property | Use it to show a loading indicator in QML while scan is running |
+| Flash drive vs phone | Both use the same `audioFiles` / `videoFiles` lists — QML code is identical for both |
+| udisks2 required | `sudo apt install udisks2` — usually pre-installed on Ubuntu/Fedora |
+| gvfs required | `sudo apt install gvfs` — usually pre-installed on desktop Linux |

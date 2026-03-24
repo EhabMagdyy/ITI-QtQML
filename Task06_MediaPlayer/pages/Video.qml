@@ -16,6 +16,7 @@ Rectangle {
         videoOutput: videoOut
         property bool videoSelected: false
         property string errorMessage: ""
+        property int currentFileIndex: -1
 
         onErrorOccurred: function(error, errorString) {
             videoSelected = false
@@ -765,7 +766,20 @@ Rectangle {
                 // Prev
                 ControlBtn {
                     icon: "◀◀"
-                    onClicked: { videoPlayer.position = 0 }
+                    onClicked: { 
+                        if (rightPanel.currentIndex === 2 && usbManager.connected && usbManager.videoFiles.length > 0) {
+                            // USB mode - navigate files
+                            var newIndex = videoPlayer.currentFileIndex + 1
+                            if (newIndex >= usbManager.videoFiles.length) newIndex = 0
+                            videoPlayer.currentFileIndex = newIndex
+                            videoPlayer.source = "file://" + usbManager.videoFiles[newIndex]
+                            videoPlayer.videoSelected = true
+                            videoPlayer.play()
+                        } else {
+                            // For local/URL videos, just jump to end (no playlist)
+                            videoPlayer.position = videoPlayer.duration 
+                        }
+                    }
                 }
 
                 // Play / Pause
@@ -797,7 +811,20 @@ Rectangle {
                 // Next
                 ControlBtn {
                     icon: "▶▶"
-                    onClicked: { videoPlayer.position = videoPlayer.duration }
+                    onClicked: { 
+                        if (rightPanel.currentIndex === 2 && usbManager.connected && usbManager.videoFiles.length > 0) {
+                            // USB mode - navigate files
+                            var newIndex = videoPlayer.currentFileIndex + 1
+                            if (newIndex >= usbManager.videoFiles.length) newIndex = 0
+                            videoPlayer.currentFileIndex = newIndex
+                            videoPlayer.source = "file://" + usbManager.videoFiles[newIndex]
+                            videoPlayer.videoSelected = true
+                            videoPlayer.play()
+                        } else {
+                            // For local/URL videos, just jump to end (no playlist)
+                            videoPlayer.position = videoPlayer.duration 
+                        }
+                    }
                 }
             }
 
