@@ -519,16 +519,233 @@ Rectangle {
 
         // ================================================== USB audio ==============================================
         Rectangle {
-            anchors.fill: parent 
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: audioPage.width / 20
+            radius: audioPage.width / 20
             visible: rightPanel.currentIndex === 3
             color: 'transparent'
 
+            onVisibleChanged: {
+                if (visible) rightPanel.browseIcon = "💾"
+            }
+
+            // No USB connected
             Text {
                 anchors.centerIn: parent
-                text: "🔌  USB — Coming Soon"
+                visible: !usbManager.connected
+                text: "Plug in a USB device"
                 color: '#557a70'
-                font.pixelSize: audioPage.width / 55
+                font.pixelSize: audioPage.width / 35
                 font.family: "Arial"
+            }
+
+            // Loading indicator
+            Rectangle {
+                anchors.fill: parent
+                anchors.topMargin: audioPage.width / 65
+                anchors.rightMargin: audioPage.width / 65
+                anchors.leftMargin: audioPage.width / 65
+                anchors.bottomMargin: audioPage.width / 18
+                color: '#041c20'
+                visible: usbManager.scanning
+                z: 5
+                radius: audioPage.width / 60
+
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 20
+
+                    // Spinner
+                    Rectangle {
+                        width: 40; height: 40; radius: 20
+                        color: 'transparent'
+                        border.color: '#00ffaa'
+                        border.width: 3
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        
+                        Rectangle {
+                            width: 6; height: 6
+                            color: '#041c20'
+                            anchors.top: parent.top
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            anchors.topMargin: -2
+                        }
+
+                        RotationAnimation on rotation {
+                            running: parent.visible
+                            loops: Animation.Infinite
+                            duration: 900
+                            from: 0; to: 360
+                        }
+                    }
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "Scanning " + usbManager.driveName + "..."
+                        color: '#00ffaa'
+                        font.pixelSize: audioPage.width / 60
+                        font.family: "Arial"
+                    }
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "This may take a moment for phones (MTP)"
+                        color: '#557a70'
+                        font.pixelSize: audioPage.width / 80
+                        font.family: "Arial"
+                    }
+
+                    // Cancel Scanning button
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: cancelText.width * 2.5
+                        height: cancelText.height + 16
+                        radius: height / 2
+                        color: cancelArea.containsMouse ? "#ff4444" : "#aa2222"
+                        
+                        Text {
+                            id: cancelText
+                            anchors.centerIn: parent
+                            text: "Cancel Scan"
+                            color: "#ffffff"
+                            font.pixelSize: audioPage.width / 60
+                            font.family: "Arial"
+                            font.bold: true
+                        }
+                        
+                        MouseArea {
+                            id: cancelArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: usbManager.disconnectDevice()
+                        }
+                    }
+                    
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "Found: " + usbManager.audioFiles.length + " audio files"
+                        color: '#557a70'
+                        font.pixelSize: audioPage.width / 80
+                        visible: usbManager.audioFiles.length > 0
+                    }
+                }
+            }
+
+            // File list (List the audio files found on the USB after scanning)
+            Column {
+                anchors.fill: parent
+                anchors.margins: audioPage.height / 20
+                anchors.bottomMargin: audioController.height + audioPage.height / 20
+                spacing: audioPage.height / 30
+                visible: usbManager.connected && !usbManager.scanning
+
+                // Drive name header
+                Row {
+                    id: driveHeader
+                    spacing: 10
+                    Text {
+                        text: "🔌  " + usbManager.driveName
+                        color: '#00ffaa'
+                        font.pixelSize: audioPage.width / 55
+                        font.bold: true
+                        font.family: "Arial"
+                    }
+                    Text {
+                        text: usbManager.audioFiles.length + " files"
+                        color: '#557a70'
+                        font.pixelSize: audioPage.width / 75
+                        font.family: "Arial"
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                // List Files
+                ListView {
+                    width: parent.width
+                    height: parent.height - parent.spacing - driveHeader.height
+                    clip: true
+                    model: usbManager.audioFiles
+                    spacing: 4
+
+                    ScrollBar.vertical: ScrollBar {
+                        id: listScrollBar
+                        width: audioPage.width / 100
+                        anchors.right: parent.right
+                        anchors.rightMargin: 4
+                        
+                        contentItem: Rectangle {
+                            implicitWidth: parent.width
+                            radius: width / 2
+                            color: listScrollBar.pressed ? '#00ffaa' : listScrollBar.hovered ? '#00cc88' : '#0d4a52'
+                            opacity: listScrollBar.hovered || listScrollBar.pressed ? 1.0 : 0.6
+                            Behavior on color { ColorAnimation { duration: 150 } }
+                            Behavior on opacity { NumberAnimation { duration: 150 } }
+                        }
+                        
+                        background: Rectangle {
+                            implicitWidth: parent.width
+                            color: '#05262c'
+                            radius: width / 2
+                            opacity: 0.3
+                        }
+                        
+                        // Minimum size for thumb when list is long
+                        minimumSize: 0.1
+                    }
+
+                    delegate: Rectangle {
+                        required property string modelData
+                        required property int index
+                        width: ListView.view.width - listScrollBar.width * 2 
+                        height: audioPage.height / 14
+                        radius: height / 5
+                        color: audioPlayer.source.toString() === ("file://" + modelData)
+                            ? '#0d4a52'
+                            : rowArea.containsMouse ? '#072830' : 'transparent'
+                        border.color: audioPlayer.source.toString() === ("file://" + modelData)
+                                    ? '#00ffaa' : 'transparent'
+                        border.width: 1
+                        Behavior on color { ColorAnimation { duration: 120 } }
+
+                        Row {
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.left: parent.left
+                            anchors.leftMargin: parent.width / 20
+                            spacing: parent.width / 30
+
+                            Text {
+                                text: "🎵"
+                                font.pixelSize: audioPage.width / 70
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+
+                            Text {
+                                text: usbManager.fileName(modelData)
+                                color: audioPlayer.source.toString() === ("file://" + modelData)
+                                    ? '#00ffaa' : '#d0e8e4'
+                                font.pixelSize: audioPage.width / 70
+                                font.family: "Arial"
+                                elide: Text.ElideRight
+                                width: parent.parent.width * 0.7
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        MouseArea {
+                            id: rowArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: {
+                                audioPlayer.source = "file://" + modelData
+                                audioPlayer.audioSelected = true
+                                audioPlayer.play()
+                            }
+                        }
+                    }
+                }
             }
         }
 
