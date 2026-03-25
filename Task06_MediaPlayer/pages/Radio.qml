@@ -73,7 +73,7 @@ Rectangle {
                 running: true
                 loops: Animation.Infinite
                 NumberAnimation { to: 1.0; duration: 800; easing.type: Easing.InOutQuad }
-                NumberAnimation { to: 0.0; duration: 800; easing.type: Easing.InOutQuad }
+                NumberAnimation { to: 0.4; duration: 800; easing.type: Easing.InOutQuad }
             }
         }
     }
