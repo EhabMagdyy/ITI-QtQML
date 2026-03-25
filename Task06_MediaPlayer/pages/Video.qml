@@ -586,6 +586,7 @@ Rectangle {
                             onClicked: {
                                 videoPlayer.source = "file://" + modelData
                                 videoPlayer.videoSelected = true
+                                videoPlayer.currentFileIndex = index
                                 videoPlayer.play()
                             }
                         }
@@ -718,7 +719,7 @@ Rectangle {
             ControlBtn {
                 id: volumeBtn
                 property bool muted: false
-                icon: audioOut.muted ? "🔇" : volumeSlider.value < 0.5 ? "🔉" : "🔊"
+                icon: audioOut.muted ? "🔈" : volumeSlider.value < 0.5 ? "🔉" : "🔊"
                 onClicked: audioOut.muted = !audioOut.muted
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
@@ -769,8 +770,8 @@ Rectangle {
                     onClicked: { 
                         if (rightPanel.currentIndex === 2 && usbManager.connected && usbManager.videoFiles.length > 0) {
                             // USB mode - navigate files
-                            var newIndex = videoPlayer.currentFileIndex + 1
-                            if (newIndex >= usbManager.videoFiles.length) newIndex = 0
+                            var newIndex = videoPlayer.currentFileIndex - 1
+                            if (newIndex < 0) newIndex = usbManager.videoFiles.length - 1
                             videoPlayer.currentFileIndex = newIndex
                             videoPlayer.source = "file://" + usbManager.videoFiles[newIndex]
                             videoPlayer.videoSelected = true
