@@ -1,10 +1,12 @@
-# Media Player (Radio Streaming / Audio & Video Player via multiple sources)
+# Media Player
+
+A Qt6/QML infotainment-style media player for Linux supporting audio, video, radio, and Bluetooth streaming.
+
+[Demo Video](https://drive.google.com/file/d/1bVRyFNKSCM6oZxuoU_8N3NN38dn5ZDSm/view?usp=sharing)
+
+---
 
 ## Project Features
- 
-A Qt6/QML infotainment-style media player for Linux supporting audio, video, radio, and Bluetooth streaming.
- 
----
  
 ### UI & Window
  
