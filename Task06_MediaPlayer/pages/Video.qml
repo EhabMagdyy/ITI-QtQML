@@ -776,9 +776,9 @@ Rectangle {
                             videoPlayer.source = "file://" + usbManager.videoFiles[newIndex]
                             videoPlayer.videoSelected = true
                             videoPlayer.play()
-                        } else {
-                            // For local/URL videos, just jump to end (no playlist)
-                            videoPlayer.position = videoPlayer.duration 
+                        } 
+                        else {
+                            videoPlayer.position = 0
                         }
                     }
                 }
@@ -821,8 +821,8 @@ Rectangle {
                             videoPlayer.source = "file://" + usbManager.videoFiles[newIndex]
                             videoPlayer.videoSelected = true
                             videoPlayer.play()
-                        } else {
-                            // For local/URL videos, just jump to end (no playlist)
+                        }
+                        else {
                             videoPlayer.position = videoPlayer.duration 
                         }
                     }

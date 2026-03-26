@@ -1,5 +1,207 @@
 # Media Player (Radio Streaming / Audio & Video Player via multiple sources)
 
+## Project Features
+ 
+A Qt6/QML infotainment-style media player for Linux supporting audio, video, radio, and Bluetooth streaming.
+ 
+---
+ 
+### UI & Window
+ 
+- Frameless window with custom title bar (minimize, maximize, close)
+- Title bar auto-hides and appears on hover
+- Custom window resize handles (all edges and corners)
+- Full-screen by default (`Screen.width` × `Screen.height`)
+- Dark teal gradient background with rounded corners and border
+- Responsive layout — all sizes relative to window dimensions
+- Smooth color and opacity transitions throughout
+- Custom `ControlBtn` inline component for reusable icon buttons
+ 
+---
+ 
+### Main Page
+ 
+- Three animated media cards: Radio, Audio, Video
+- Cards highlight on hover with lighter gradient
+- Navigation via `StackView` push/pop
+- Cards sized and spaced relative to window
+ 
+---
+ 
+### Radio Page
+ 
+- Live internet radio streaming via `MediaPlayer`
+- Station: Radio Paradise (320k AAC) — eclectic, ad-free
+- Metadata displayed: station name, genre, bitrate
+- Now playing track fetched from Radio Paradise API (artist + title + album art)
+- Album art loaded from stream metadata URL
+- Blurred background derived from album art
+- Pulsing live dot animation (TV broadcast style)
+- Genre and bitrate info chips
+- Buffer progress bar with animated fill
+- Volume slider with mute toggle (🔇 🔉 🔊)
+- Website link chip — opens radioparadise.com in browser
+- Play/Stop toggle button
+- Auto-reconnect on stall
+ 
+---
+ 
+#### Audio Page
+ 
+#### Layout
+- Left panel: source selector (Local / Internet / Bluetooth / USB)
+- Right panel: content area that switches per source
+- Fixed audio controller bar at the bottom of the right panel
+ 
+#### Audio Controller (shared across all sources)
+- Progress slider with seekable position and time labels (current / total)
+- Play / Pause toggle button
+- Previous (restart) and Next (skip to end) buttons
+- Volume slider with mute toggle
+- Speed slider (0.5× to 2.0×) with indicator label
+- Browse button that adapts per source (📂 / 🌐 / 🔵 / 🔌)
+- Controller hidden/disabled elements when Bluetooth source is active
+ 
+#### Local Audio
+- Native `FileDialog` for picking audio files
+- Supports: mp3, wav, aac, flac, ogg, m4a
+- Displays audio icon + filename after selection
+- Filename shown without extension
+ 
+#### Internet Audio
+- Custom-styled `Dialog` with `TextField` for URL input
+- Submit via button or Enter key
+- Displays audio icon + stream name after loading
+- Error detection with friendly messages:
+  - Network unreachable
+  - Unsupported format
+  - Access denied
+  - Invalid URL
+- Loading spinner overlay while buffering
+- Spinner swaps with image (not overlaid on top)
+ 
+#### Bluetooth Audio
+- Detects connected phone via BlueZ D-Bus polling (every 2s)
+- Shows device name chip (e.g. `🔵 Ehab`)
+- Displays track title, artist, album
+- Player status chip with pulsing dot (playing / paused / stopped)
+- Album image with:
+  - Circular crop
+  - Slow vinyl rotation when playing
+  - 3× staggered pulse rings expanding outward
+  - All animations pause when music is paused
+- Album art fetched from iTunes API using track metadata
+- AVRCP controls: play, pause, next, previous, stop
+- System volume control via `amixer` for BT audio
+- Progress slider hidden (not supported over AVRCP)
+- Speed slider hidden (not applicable for BT)
+- Auto-retry connection every 3 seconds
+ 
+#### USB Audio
+- Detects USB flash drives via `udisks2` D-Bus
+- Detects Android phones via MTP at `/run/user/<uid>/gvfs/mtp:.../Internal storage/`
+- Prefers `"Internal storage"` subfolder automatically
+- Background file scan using `QtConcurrent` thread
+- Live file list updates every 20 files found during scan
+- Skips irrelevant folders: Android/, DCIM/, .thumbnails/, .cache/, etc.
+- File cap at 5000 to prevent infinite scans
+- Scrollable `ListView` of audio files
+- Active file highlighted in the list
+- `fileName()` helper strips path and extension
+- Scan cancellation support
+- 3-second poll timer for connect/disconnect detection
+ 
+---
+ 
+### Video Page
+ 
+#### Layout
+- Same left panel + right panel structure as Audio page
+- Fixed video controller bar at the bottom
+- Progress slider + time labels above the controller
+ 
+### Video Controller (shared across all sources)
+- Seekable progress slider with current / total time
+- Filename centered between time labels with `ElideMiddle`
+- Play / Pause toggle
+- Previous (restart) and Next (skip to end)
+- Volume slider with mute toggle
+- Speed slider (0.5× to 2.0×) with indicator
+- Browse button adapts per source
+ 
+#### Local Video
+- `FileDialog` for picking video files
+- Supports: mp4, mkv, avi, mov, wmv, webm
+- `VideoOutput` displays the video
+- Filename overlay at top-left when playing
+- Placeholder text when nothing selected
+ 
+#### Internet Video
+- Custom-styled URL input `Dialog`
+- Same error handling as Internet Audio
+- Loading / buffering / stalled overlay with spinner
+- Semi-transparent black overlay during loading
+- `VideoOutput` shared with local panel
+ 
+#### Bluetooth Video
+- Coming soon placeholder
+ 
+#### USB Video
+- Same `UsbManager` backend as audio
+- Uses `videoFiles` list instead of `audioFiles`
+ 
+---
+ 
+### Backend — BluetoothManager (C++)
+ 
+- D-Bus connection to BlueZ via system bus
+- Polling-based architecture (every 2s) — avoids unreliable D-Bus signal registration
+- Raw `QDBusArgument` parsing for nested BlueZ `a{oa{sa{sv}}}` types
+- Detects `org.bluez.Device1` (connection state) and `org.bluez.MediaPlayer1` (AVRCP)
+- Exposes to QML: `connected`, `deviceName`, `deviceAddress`, `trackTitle`, `trackArtist`, `trackAlbum`, `playerStatus`, `trackImageUrl`
+- AVRCP commands: `play()`, `pause()`, `stop()`, `next()`, `previous()`
+- System volume: `setVolume(int percent)` via `amixer`
+- Album art fetched via iTunes Search API (no API key required)
+- Signals emitted only when values change — no redundant QML updates
+- Registered as context property in `main.cpp`
+ 
+---
+ 
+### Backend — UsbManager (C++)
+ 
+- Dual detection: udisks2 (flash drives) + gvfs (MTP phones)
+- `InterfacesAdded` / `InterfacesRemoved` D-Bus signals for flash drives
+- 3-second poll timer for MTP phones and disconnect detection
+- Raw `QDBusArgument` parsing — same approach as BluetoothManager
+- `extractMountPoints()` handles `aay` D-Bus byte array type
+- Background file scan via `QtConcurrent::run`
+- Live progress: `filesChanged` emitted every 20 files
+- Skips system/irrelevant folders automatically
+- `disconnectDevice()` — safely cancels scan thread and clears state
+- `fileName(path)` — QML helper returning name without path or extension
+- Exposes: `connected`, `scanning`, `mountPath`, `driveName`, `audioFiles`, `videoFiles`
+ 
+---
+ 
+### Dependencies
+ 
+| Library | Purpose |
+|---|---|
+| `Qt6::Quick` | QML UI |
+| `Qt6::Multimedia` | MediaPlayer, AudioOutput, VideoOutput |
+| `Qt6::DBus` | BluetoothManager + UsbManager |
+| `Qt6::Network` | iTunes album art API fetch |
+| `Qt6::Concurrent` | Background USB file scan |
+| `Qt6::Dialogs` | FileDialog, Dialog |
+| `BlueZ` | Bluetooth stack (system) |
+| `udisks2` | USB flash drive detection (system) |
+| `gvfs` | MTP phone mount (system) |
+| `PulseAudio / PipeWire` | Audio routing for Bluetooth A2DP |
+
+---
+
+## Media Player & Backend
+
 ## 1. Qt MediaPlayer
 
 ### Properties

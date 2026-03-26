@@ -857,7 +857,7 @@ Rectangle {
                 id: volumeBtn
                 property bool muted: false
                 visible: rightPanel.currentIndex !== 2
-                icon: audioOut.muted ? "🔇" : volumeSlider.value < 0.5 ? "🔉" : "🔊"
+                icon: audioOut.muted ? "🔈" : volumeSlider.value < 0.5 ? "🔉" : "🔊"
                 onClicked: audioOut.muted = !audioOut.muted
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
