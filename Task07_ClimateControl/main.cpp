@@ -1,0 +1,17 @@
+#include <QGuiApplication>
+#include <QQmlApplicationEngine>
+
+int main(int argc, char *argv[]){
+    QGuiApplication app(argc, argv);
+
+    QQmlApplicationEngine engine;
+    QObject::connect(
+        &engine,
+        &QQmlApplicationEngine::objectCreationFailed,
+        &app,
+        []() { QCoreApplication::exit(-1); },
+        Qt::QueuedConnection);
+
+    engine.loadFromModule("Task07_ClimateControl", "Main");
+    return app.exec();  // without it will load the UI and immediately exit.
+}
