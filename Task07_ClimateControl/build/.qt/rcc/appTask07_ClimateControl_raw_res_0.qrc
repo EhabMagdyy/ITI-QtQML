@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="/qt/qml/Task07_ClimateControl/">
+    <file alias="resources.qrc">/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/resources.qrc</file>
+  </qresource>
+</RCC>
+

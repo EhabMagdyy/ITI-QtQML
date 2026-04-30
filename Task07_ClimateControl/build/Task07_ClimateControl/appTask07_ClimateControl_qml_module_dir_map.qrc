@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="/">
+    <file alias="/qt/qml/Task07_ClimateControl">/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/Task07_ClimateControl</file>
+
+  </qresource>
+</RCC>

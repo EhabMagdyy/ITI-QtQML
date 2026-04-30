@@ -1,0 +1,14 @@
+-I
+/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build
+-I
+/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/Task07_ClimateControl
+-I
+/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build
+-I
+/home/ehab/Qt/6.10.2/gcc_64/qml
+--resource
+/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/.qt/rcc/qmake_Task07_ClimateControl.qrc
+--resource
+/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/.qt/rcc/appTask07_ClimateControl_raw_qml_0.qrc
+--module
+Task07_ClimateControl

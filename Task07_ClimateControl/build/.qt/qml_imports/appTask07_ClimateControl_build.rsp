@@ -1,0 +1,14 @@
+-rootPath
+/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl
+-cmake-output
+-output-file
+/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/.qt/qml_imports/appTask07_ClimateControl_build.cmake
+-importPath
+/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build
+-importPath
+/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/Task07_ClimateControl
+-importPath
+/home/ehab/Qt/6.10.2/gcc_64/qml
+-qrcFiles
+/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/.qt/rcc/qmake_Task07_ClimateControl.qrc
+/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/.qt/rcc/appTask07_ClimateControl_raw_qml_0.qrc

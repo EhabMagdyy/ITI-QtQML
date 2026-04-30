@@ -1,0 +1,2 @@
+set(__QT_DEPLOY_TARGET_appTask07_ClimateControl_FILE /home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/appTask07_ClimateControl)
+set(__QT_DEPLOY_TARGET_appTask07_ClimateControl_TYPE EXECUTABLE)

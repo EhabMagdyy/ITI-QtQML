@@ -1,0 +1,205 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-914e63b9358451a06a3b.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "Task07_ClimateControl",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "all_aotstats::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_aotstats-Debug-1017ed14a2d9dd5c8187.json",
+					"name" : "all_aotstats",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "all_qmllint::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_qmllint-Debug-d8b8c95a66038ec25113.json",
+					"name" : "all_qmllint",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "all_qmllint_json::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_qmllint_json-Debug-c6d86896c29751366729.json",
+					"name" : "all_qmllint_json",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "all_qmllint_module::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_qmllint_module-Debug-717fb2d47b8e68859ce3.json",
+					"name" : "all_qmllint_module",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "all_qmltyperegistrations::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_qmltyperegistrations-Debug-66012f91a1eaa61a3dda.json",
+					"name" : "all_qmltyperegistrations",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appTask07_ClimateControl::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appTask07_ClimateControl-Debug-de7dc3224658cf3c24ad.json",
+					"name" : "appTask07_ClimateControl",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appTask07_ClimateControl_autogen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appTask07_ClimateControl_autogen-Debug-22e1165d07f4f0544832.json",
+					"name" : "appTask07_ClimateControl_autogen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appTask07_ClimateControl_autogen_timestamp_deps::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appTask07_ClimateControl_autogen_timestamp_deps-Debug-04e6e89bcf2884273e82.json",
+					"name" : "appTask07_ClimateControl_autogen_timestamp_deps",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appTask07_ClimateControl_copy_qml::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appTask07_ClimateControl_copy_qml-Debug-375fc08b1da51b30a604.json",
+					"name" : "appTask07_ClimateControl_copy_qml",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appTask07_ClimateControl_copy_res::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appTask07_ClimateControl_copy_res-Debug-ab3e631aef0337d83bfc.json",
+					"name" : "appTask07_ClimateControl_copy_res",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appTask07_ClimateControl_qmlimportscan::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appTask07_ClimateControl_qmlimportscan-Debug-599d2a0d061dd7f41862.json",
+					"name" : "appTask07_ClimateControl_qmlimportscan",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appTask07_ClimateControl_qmllint::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appTask07_ClimateControl_qmllint-Debug-435335a294e73b3ab034.json",
+					"name" : "appTask07_ClimateControl_qmllint",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appTask07_ClimateControl_qmllint_json::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appTask07_ClimateControl_qmllint_json-Debug-c10290c5bc3417cb8c29.json",
+					"name" : "appTask07_ClimateControl_qmllint_json",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appTask07_ClimateControl_qmllint_module::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appTask07_ClimateControl_qmllint_module-Debug-89b69578c0783179614c.json",
+					"name" : "appTask07_ClimateControl_qmllint_module",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appTask07_ClimateControl_qmltyperegistration::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appTask07_ClimateControl_qmltyperegistration-Debug-7311078cd3d0a8fd2552.json",
+					"name" : "appTask07_ClimateControl_qmltyperegistration",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "generate_qmlls_build_ini_file::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-generate_qmlls_build_ini_file-Debug-2803447459b16d2e1f56.json",
+					"name" : "generate_qmlls_build_ini_file",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "module_appTask07_ClimateControl_aotstats_target::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-module_appTask07_ClimateControl_aotstats_target-Debug-a3d4e3a5e33a9789f0ad.json",
+					"name" : "module_appTask07_ClimateControl_aotstats_target",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build",
+		"source" : "/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

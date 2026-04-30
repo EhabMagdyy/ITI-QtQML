@@ -1,0 +1,6 @@
+module Task07_ClimateControl
+typeinfo appTask07_ClimateControl.qmltypes
+prefer :/qt/qml/Task07_ClimateControl/
+Main 1.0 Main.qml
+depends QtQuick
+

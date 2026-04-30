@@ -1,0 +1,22 @@
+{
+	"BUILD_DIR" : "/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/appTask07_ClimateControl_autogen",
+	"CMAKE_BINARY_DIR" : "/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build",
+	"CMAKE_CURRENT_BINARY_DIR" : "/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl",
+	"CMAKE_SOURCE_DIR" : "/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl",
+	"INCLUDE_DIR" : "/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/appTask07_ClimateControl_autogen/include",
+	"INPUTS" : 
+	[
+		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/MButton.qml"
+	],
+	"LOCK_FILE" : "/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/CMakeFiles/appTask07_ClimateControl_autogen.dir/AutoRcc_resources_EWIEGA46WW_Lock.lock",
+	"MULTI_CONFIG" : false,
+	"OPTIONS" : [ "-name", "resources" ],
+	"OUTPUT_CHECKSUM" : "EWIEGA46WW",
+	"OUTPUT_NAME" : "qrc_resources.cpp",
+	"RCC_EXECUTABLE" : "/home/ehab/Qt/6.10.2/gcc_64/libexec/rcc",
+	"RCC_LIST_OPTIONS" : [ "--list" ],
+	"SETTINGS_FILE" : "/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/CMakeFiles/appTask07_ClimateControl_autogen.dir/AutoRcc_resources_EWIEGA46WW_Used.txt",
+	"SOURCE" : "/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/resources.qrc",
+	"VERBOSITY" : 0
+}
