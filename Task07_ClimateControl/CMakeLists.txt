@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 project(Task07_ClimateControl VERSION 0.1 LANGUAGES CXX)
 
+set(CMAKE_AUTORCC ON)
+
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Find the Qt6 package, specifically the Quick module, which is required for this application.
@@ -18,6 +20,8 @@ qt_add_qml_module(appTask07_ClimateControl
     VERSION 1.0
     QML_FILES
         Main.qml
+    RESOURCES
+        resources.qrc
 )
 
 set_target_properties(appTask07_ClimateControl PROPERTIES

@@ -7,7 +7,12 @@
 	"INCLUDE_DIR" : "/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/appTask07_ClimateControl_autogen/include",
 	"INPUTS" : 
 	[
-		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/MButton.qml"
+		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/assets/icons/auto.png",
+		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/assets/icons/fan.png",
+		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/assets/icons/cool.png",
+		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/assets/icons/heat.png",
+		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/assets/icons/air.png",
+		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/assets/icons/humidity.png"
 	],
 	"LOCK_FILE" : "/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/CMakeFiles/appTask07_ClimateControl_autogen.dir/AutoRcc_resources_EWIEGA46WW_Lock.lock",
 	"MULTI_CONFIG" : false,

@@ -4,6 +4,7 @@ appTask07_ClimateControl_autogen/timestamp: \
 	/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/CMakeFiles/3.22.1/CMakeCXXCompiler.cmake \
 	/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/CMakeFiles/3.22.1/CMakeSystem.cmake \
 	/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/main.cpp \
+	/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/resources.qrc \
 	/home/ehab/Qt/6.10.2/gcc_64/lib/cmake/Qt6/FindWrapAtomic.cmake \
 	/home/ehab/Qt/6.10.2/gcc_64/lib/cmake/Qt6/FindWrapOpenGL.cmake \
 	/home/ehab/Qt/6.10.2/gcc_64/lib/cmake/Qt6/FindWrapVulkanHeaders.cmake \

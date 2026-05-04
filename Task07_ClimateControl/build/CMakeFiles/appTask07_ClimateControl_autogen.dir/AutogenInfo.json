@@ -884,9 +884,11 @@
 		"/home/ehab/Qt/6.10.2/gcc_64/lib/cmake/Qt6Core/Qt6CoreConfigureFileTemplate.in",
 		"/home/ehab/Qt/6.10.2/gcc_64/lib/cmake/Qt6Qml/Qt6QmlModuleDirMappingTemplate.qrc.in",
 		"/home/ehab/Qt/6.10.2/gcc_64/lib/cmake/Qt6Core/Qt6CoreConfigureFileTemplate.in",
+		"/home/ehab/Qt/6.10.2/gcc_64/lib/cmake/Qt6Core/Qt6CoreConfigureFileTemplate.in",
 		"/usr/share/cmake-3.22/Modules/GNUInstallDirs.cmake",
 		"/home/ehab/Qt/6.10.2/gcc_64/lib/cmake/Qt6Qml/Qt6qmldirTemplate.cmake.in",
-		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/.qt/qml_imports/appTask07_ClimateControl_conf.cmake"
+		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/.qt/qml_imports/appTask07_ClimateControl_conf.cmake",
+		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/resources.qrc"
 	],
 	"CMAKE_SOURCE_DIR" : "/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl",
 	"DEP_FILE" : "/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/appTask07_ClimateControl_autogen/deps",
@@ -956,6 +958,7 @@
 	"MOC_SKIP" : 
 	[
 		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/.qt/rcc/qrc_appTask07_ClimateControl_raw_qml_0.cpp",
+		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/.qt/rcc/qrc_appTask07_ClimateControl_raw_res_0.cpp",
 		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/.qt/rcc/qrc_qmake_Task07_ClimateControl.cpp",
 		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/.rcc/qmlcache/appTask07_ClimateControl_Main_qml.cpp",
 		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/.rcc/qmlcache/appTask07_ClimateControl_qmlcache_loader.cpp",
@@ -982,6 +985,7 @@
 	"UIC_SKIP" : 
 	[
 		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/.qt/rcc/qrc_appTask07_ClimateControl_raw_qml_0.cpp",
+		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/.qt/rcc/qrc_appTask07_ClimateControl_raw_res_0.cpp",
 		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/.qt/rcc/qrc_qmake_Task07_ClimateControl.cpp",
 		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/.rcc/qmlcache/appTask07_ClimateControl_Main_qml.cpp",
 		"/home/ehab/Documents/ITI_9Months/Qt/Task07_ClimateControl/build/.rcc/qmlcache/appTask07_ClimateControl_qmlcache_loader.cpp",

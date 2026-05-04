@@ -4,6 +4,7 @@ appTask07_ClimateControl_autogen/timestamp: \
   CMakeFiles/3.22.1/CMakeCXXCompiler.cmake \
   CMakeFiles/3.22.1/CMakeSystem.cmake \
   ../main.cpp \
+  ../resources.qrc \
   /home/ehab/Qt/6.10.2/gcc_64/lib/cmake/Qt6/FindWrapAtomic.cmake \
   /home/ehab/Qt/6.10.2/gcc_64/lib/cmake/Qt6/FindWrapOpenGL.cmake \
   /home/ehab/Qt/6.10.2/gcc_64/lib/cmake/Qt6/FindWrapVulkanHeaders.cmake \
